@@ -1,6 +1,5 @@
-package com.task.ecommerce.Auth;
+package com.task.ecommerce.Auth.dto;
 
-import com.task.ecommerce.entity.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -31,5 +30,9 @@ public class RegistrationRequest {
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
+    @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d).{8,}$",
+            message = "Password must contain uppercase, lowercase and a number."
+    )
     private String password;
 }

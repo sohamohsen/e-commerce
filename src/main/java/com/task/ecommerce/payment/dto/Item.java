@@ -1,5 +1,6 @@
-package com.task.ecommerce.payment;
+package com.task.ecommerce.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Data
@@ -7,10 +8,15 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Item {
-
+    @JsonProperty("name")
     private String name;
 
-    private int amount;
+    @JsonProperty("description")
+    private String description;
 
-    private int quantity;
+    @JsonProperty("amount_cents")
+    private Integer amountCents;
+
+    @JsonProperty("quantity")
+    private Integer quantity;
 }

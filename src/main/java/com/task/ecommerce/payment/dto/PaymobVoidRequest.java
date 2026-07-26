@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 @Builder
-public class PaymobRefundRequest {
+public class PaymobVoidRequest {
     private String transactionId;
 }

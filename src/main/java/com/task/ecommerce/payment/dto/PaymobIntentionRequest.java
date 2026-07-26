@@ -1,11 +1,7 @@
-package com.task.ecommerce.payment;
+package com.task.ecommerce.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.task.ecommerce.entity.User;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +13,6 @@ import java.util.Map;
 public class PaymobIntentionRequest {
 
     private Long amount;
-
     private String currency;
 
     @JsonProperty("payment_methods")
@@ -34,4 +29,12 @@ public class PaymobIntentionRequest {
     private List<Item> items;
 
     private Map<String, Object> extras;
+
+    private Integer expiration;
+
+    @JsonProperty("notification_url")
+    private String notificationUrl;
+
+    @JsonProperty("redirection_url")
+    private String redirectionUrl;
 }

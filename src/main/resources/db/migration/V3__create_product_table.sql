@@ -14,5 +14,7 @@ CREATE TABLE product (
 
                          CONSTRAINT fk_product_category
                              FOREIGN KEY (category_id)
-                                 REFERENCES category(id)
+                                 REFERENCES category(id),
+                         created_by INT NOT NULL,
+                         updated_by INT
 );

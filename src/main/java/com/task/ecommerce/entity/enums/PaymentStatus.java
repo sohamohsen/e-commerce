@@ -1,4 +1,12 @@
 package com.task.ecommerce.entity.enums;
 
-public class PaymentStatus {
+public enum PaymentStatus {
+    INITIATED,
+    SUCCESS,
+    FAILED,
+    EXPIRED,
+    REFUND_REQUESTED,
+    REFUNDED,
+    VOIDED,
+    CAPTURED
 }

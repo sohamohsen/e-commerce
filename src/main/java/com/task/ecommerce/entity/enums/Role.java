@@ -1,6 +1,7 @@
 package com.task.ecommerce.entity.enums;
 
-public enum UserRole {
+public enum Role {
+    SUPER_ADMIN,
     ADMIN,
     CUSTOMER
 }

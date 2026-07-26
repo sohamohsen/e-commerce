@@ -1,4 +1,4 @@
-package com.task.ecommerce.Auth;
+package com.task.ecommerce.Auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

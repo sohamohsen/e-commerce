@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/admin-categories")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
-public class CategoryController {
+public class AdminCategoryController {
 
     private final CategoryService categoryService;
 
@@ -76,6 +76,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{categoryId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteCategory(
             @PathVariable Integer categoryId
     ){

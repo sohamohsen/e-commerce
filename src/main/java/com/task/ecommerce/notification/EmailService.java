@@ -1,13 +1,16 @@
-package com.task.ecommerce.service;
+package com.task.ecommerce.notification;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
@@ -20,11 +23,26 @@ public class EmailService {
             helper.setTo(toEmail);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
-            helper.addAttachment(pdfFileName, new org.springframework.core.io.ByteArrayResource(pdfBytes));
+            helper.addAttachment(pdfFileName, new ByteArrayResource(pdfBytes));
 
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send invoice email", e);
+            log.error("Failed to send email to {}", toEmail, e);
+        }
+    }
+
+    public void sendSimpleEmail(String toEmail, String subject, String htmlBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Failed to send email to {}", toEmail, e);
         }
     }
 }

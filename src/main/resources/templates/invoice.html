@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        body { font-family: Arial, sans-serif; color: #222; }
+        .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        .total-row td { font-weight: bold; border-top: 2px solid #333; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h2>Invoice <span th:text="${invoice.invoiceNumber}">INV-0001</span></h2>
+    <p>Date: <span th:text="${#temporals.format(invoice.issuedAt, 'dd MMM yyyy, HH:mm')}">date</span></p>
+</div>
+
+<p>Billed to: <strong th:text="${invoice.customerName}">Customer</strong> (<span th:text="${invoice.customerEmail}">email</span>)</p>
+<p>Order ID: <span th:text="${invoice.paymobOrderId}">order</span> |
+    Transaction ID: <span th:text="${invoice.transactionId}">txn</span></p>
+
+<table>
+    <thead>
+    <tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="line : ${invoice.lines}">
+        <td th:text="${line.productName}">Product</td>
+        <td th:text="${line.quantity}">1</td>
+        <td th:text="${line.unitPriceCents / 100.0} + ' ' + ${invoice.currency}">0</td>
+        <td th:text="${line.lineTotalCents / 100.0} + ' ' + ${invoice.currency}">0</td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr class="total-row">
+        <td colspan="3">Total</td>
+        <td th:text="${invoice.totalAmountCents / 100.0} + ' ' + ${invoice.currency}">0</td>
+    </tr>
+    </tfoot>
+</table>
+
+<p>Thank you for your purchase.</p>
+</body>
+</html>

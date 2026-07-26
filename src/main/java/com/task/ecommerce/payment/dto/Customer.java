@@ -1,4 +1,4 @@
-package com.task.ecommerce.payment;
+package com.task.ecommerce.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;

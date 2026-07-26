@@ -1,7 +1,7 @@
 package com.task.ecommerce.exception;
 
-public class NotFound extends RuntimeException {
-  public NotFound(String message) {
-    super(message);
-  }
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String message) {
+        super(message);
+    }
 }

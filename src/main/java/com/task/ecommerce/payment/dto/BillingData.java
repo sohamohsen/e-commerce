@@ -1,4 +1,4 @@
-package com.task.ecommerce.payment;
+package com.task.ecommerce.payment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -17,6 +17,7 @@ public class BillingData {
 
     private String email;
 
+    @JsonProperty("phone_number")
     private String phone;
 
     private String country;

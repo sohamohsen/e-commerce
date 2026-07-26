@@ -11,7 +11,7 @@ CREATE TABLE order_item (
 
                             CONSTRAINT fk_order_item_order
                                 FOREIGN KEY (order_id)
-                                    REFERENCES `order`(id),
+                                    REFERENCES `orders`(id),
 
                             CONSTRAINT fk_order_item_product
                                 FOREIGN KEY (product_id)

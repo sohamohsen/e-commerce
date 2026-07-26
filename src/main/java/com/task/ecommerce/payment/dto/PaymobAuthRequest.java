@@ -1,4 +1,6 @@
 package com.task.ecommerce.payment.dto;
 
-public class PaymobAuthRequest {
+public record PaymobAuthRequest(
+        String api_key
+) {
 }

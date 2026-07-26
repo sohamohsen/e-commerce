@@ -1,4 +1,4 @@
-package com.task.ecommerce.security;
+package com.task.ecommerce.service;
 
 import com.task.ecommerce.admin.dto.CategoryRequest;
 import com.task.ecommerce.admin.dto.CategoryResponse;
@@ -22,8 +22,8 @@ public class CategoryService {
 
     public void addCategory(CategoryRequest request, Integer userId) {
         
-        if (categoryRepository.existsByName(request.getName())){
-            throw new BadRequestException("There is category with same name already exist.");
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new BadRequestException("A category with the same name already exists.");
         }
 
         Category category = Category.builder()
@@ -54,8 +54,8 @@ public class CategoryService {
 
         categoryRepository.findById(categoryId).orElseThrow(() -> new BadRequestException("Category not found."));
 
-        if(categoryRepository.hasProducts(categoryId)){
-            throw new BadRequestException("There are products with thia category");
+        if (categoryRepository.hasProducts(categoryId)) {
+            throw new BadRequestException("The category cannot be deleted because it contains products.");
         }
 
         categoryRepository.deleteById(categoryId);
@@ -102,5 +102,39 @@ public class CategoryService {
                 .first(categories.isFirst())
                 .last(categories.isLast())
                 .build();
+    }
+
+    public PageResponse<CategoryResponse> getAllCategories(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+
+        Page<Category> categories = categoryRepository.findAll(pageable);
+
+        List<CategoryResponse> items = categories.getContent()
+                .stream()
+                .map(category -> CategoryResponse.builder()
+                        .id(category.getId())
+                        .name(category.getName())
+                        .build())
+                .toList();
+
+        return PageResponse.<CategoryResponse>builder()
+                .items(items)
+                .page(categories.getNumber())
+                .size(categories.getSize())
+                .totalElements(categories.getTotalElements())
+                .totalPages(categories.getTotalPages())
+                .first(categories.isFirst())
+                .last(categories.isLast())
+                .build();
+    }
+
+    public CategoryResponse getPublicCategory(Integer categoryId) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new BadRequestException("Category not found."));
+
+        return CategoryResponse.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .build();
+
     }
 }

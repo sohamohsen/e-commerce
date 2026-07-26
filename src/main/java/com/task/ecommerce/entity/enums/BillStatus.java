@@ -1,4 +1,7 @@
 package com.task.ecommerce.entity.enums;
 
-public class BillStatus {
+public enum BillStatus {
+    SENT,
+    FAILED,
+    PENDING
 }
