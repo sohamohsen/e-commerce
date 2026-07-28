@@ -14,6 +14,7 @@ import com.task.ecommerce.security.JwtUtil;
 import com.task.ecommerce.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
 
@@ -104,7 +106,10 @@ public class AuthService {
 
     private void authenticate(User user, String password) {
 
+        log.info("Authenticating userId={}, email={}", user.getId(), user.getEmail());
+
         try {
+            log.info("password={}", passwordEncoder.encode(password));
 
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -113,7 +118,11 @@ public class AuthService {
                     )
             );
 
+            log.info("Authentication succeeded for userId={}", user.getId());
+
         } catch (BadCredentialsException ex) {
+
+            log.warn("Authentication failed for userId={}", user.getId());
 
             handleFailedLogin(user);
 

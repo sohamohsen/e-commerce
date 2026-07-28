@@ -1,6 +1,5 @@
 package com.task.ecommerce.service;
 
-import com.task.ecommerce.admin.dto.CategoryResponse;
 import com.task.ecommerce.admin.dto.ProductRequest;
 import com.task.ecommerce.admin.dto.ProductResponse;
 import com.task.ecommerce.admin.dto.StockUpdateRequest;
@@ -10,13 +9,13 @@ import com.task.ecommerce.exception.BadRequestException;
 import com.task.ecommerce.repository.CategoryRepository;
 import com.task.ecommerce.repository.ProductRepository;
 import com.task.ecommerce.utils.PageResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
@@ -29,18 +28,22 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final S3Service s3Service;
 
-    public void addProduct(ProductRequest request, Integer userId) {
+    public void addProduct(ProductRequest request, MultipartFile image, Integer userId) {
 
         if(!categoryRepository.existsById(request.getCategoryId())){
             throw new BadRequestException("Wrong category");
         }
 
+        String imageUrl = image != null ? s3Service.uploadProductImage(image) : null;
+
+
         Product product = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())
-                .imageUrl(request.getImageUrl())
+                .imageUrl(imageUrl)
                 .quantity(request.getQuantity())
                 .categoryId(request.getCategoryId())
                 .createdBy(userId)
@@ -61,7 +64,7 @@ public class ProductService {
         return toProductResponse(product, category);
     }
 
-    public void updateProduct(Integer productId, ProductRequest request, Integer userId) {
+    public void updateProduct(Integer productId, ProductRequest request, MultipartFile newImage, Integer userId) {
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BadRequestException("Product not found."));
@@ -70,12 +73,30 @@ public class ProductService {
             throw new BadRequestException("Category not found.");
         }
 
-        product.setCategoryId(request.getCategoryId());
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setImageUrl(request.getImageUrl());
-        product.setUpdatedBy(userId);
+        if (newImage != null && !newImage.isEmpty()) {
+            s3Service.deleteProductImage(product.getImageUrl());
+            product.setImageUrl(s3Service.uploadProductImage(newImage));
+        }
+
+        if (request.getCategoryId()!= null) {
+            product.setCategoryId(request.getCategoryId());
+        }
+
+        if (request.getName()!= null) {
+            product.setName(request.getName());
+        }
+
+        if (request.getDescription()!= null) {
+            product.setDescription(request.getDescription());
+        }
+
+        if (request.getPrice()!= null) {
+            product.setPrice(request.getPrice());
+        }
+
+        if (request.getQuantity()!= null) {
+            product.setUpdatedBy(userId);
+        }
 
         productRepository.save(product);
     }
@@ -108,7 +129,8 @@ public class ProductService {
     }
 
     public void deleteProduct(Integer productId) {
-        productRepository.findById(productId).orElseThrow(() -> new BadRequestException("Product not found."));
+        Product product = productRepository.findById(productId).orElseThrow(() -> new BadRequestException("Product not found."));
+        s3Service.deleteProductImage(product.getImageUrl());
 
         productRepository.deleteById(productId);
 

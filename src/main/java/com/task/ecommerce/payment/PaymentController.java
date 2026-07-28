@@ -1,6 +1,6 @@
 package com.task.ecommerce.payment;
 
-import com.task.ecommerce.config.PaymobPropertiesConfig;
+import com.task.ecommerce.config.properties.PaymobPropertiesConfig;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.payment.dto.TransactionWrapperDto;
 import com.task.ecommerce.utils.ReturnObject;

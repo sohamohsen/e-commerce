@@ -1,4 +1,4 @@
-package com.task.ecommerce.config;
+package com.task.ecommerce.config.properties;
 
 import lombok.Getter;
 import lombok.Setter;

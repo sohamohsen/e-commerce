@@ -3,6 +3,7 @@ package com.task.ecommerce.admin;
 import com.task.ecommerce.admin.dto.*;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.service.ProductService;
+import com.task.ecommerce.service.S3Service;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,10 +28,11 @@ public class AdminProductController {
 
     @PostMapping("")
     public ResponseEntity<?> addProduct(
-            @RequestBody @Valid ProductRequest request,
+            @RequestPart @Valid ProductRequest request,
+            @RequestPart(required = false) MultipartFile image,
             @AuthenticationPrincipal User user
     ){
-        productService.addProduct(request, user.getId());
+        productService.addProduct(request, image, user.getId());
 
         ReturnObject response = ReturnObject.builder()
                 .timestamp(LocalDateTime.now())
@@ -60,10 +63,11 @@ public class AdminProductController {
     @PatchMapping("/{productId}")
     public ResponseEntity<?> updateProduct(
             @PathVariable Integer productId,
-            @RequestBody @Valid ProductRequest request,
+            @RequestPart @Valid ProductRequest request,
+            @RequestPart(required = false) MultipartFile image,
             @AuthenticationPrincipal User user
     ){
-        productService.updateProduct(productId, request, user.getId());
+        productService.updateProduct(productId, request, image, user.getId());
 
         ReturnObject response = ReturnObject.builder()
                 .timestamp(LocalDateTime.now())

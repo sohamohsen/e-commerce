@@ -1,6 +1,6 @@
 package com.task.ecommerce.payment;
 
-import com.task.ecommerce.config.PaymobPropertiesConfig;
+import com.task.ecommerce.config.properties.PaymobPropertiesConfig;
 import com.task.ecommerce.entity.*;
 import com.task.ecommerce.entity.Order;
 import com.task.ecommerce.entity.User;
@@ -89,32 +89,64 @@ public class PaymentService {
     @Transactional
     public String initiatePayment(Integer orderId, Integer userId) {
 
+        log.info("========== Initiate Payment Started ==========");
+        log.info("Order ID: {}, User ID: {}", orderId, userId);
+
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BadRequestException("Order not found."));
+                .orElseThrow(() -> {
+                    log.error("Order not found. Order ID={}", orderId);
+                    return new BadRequestException("Order not found.");
+                });
+
+        log.info("Order found: id={}, status={}, totalAmount={}, userId={}",
+                order.getId(),
+                order.getStatus(),
+                order.getTotalAmount(),
+                order.getUserId());
 
         if (!order.getUserId().equals(userId)) {
+            log.error("Order does not belong to user. Order User={}, Request User={}",
+                    order.getUserId(), userId);
             throw new BadRequestException("Order not found.");
         }
 
         if (order.getStatus() != OrderStatus.PENDING) {
+            log.error("Invalid order status. Expected=PENDING, Actual={}", order.getStatus());
             throw new BadRequestException("Payment can only be initiated for a pending order.");
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BadRequestException("User not found."));
+                .orElseThrow(() -> {
+                    log.error("User not found. User ID={}", userId);
+                    return new BadRequestException("User not found.");
+                });
+
+        log.info("User found: name={}, email={}, phone={}",
+                user.getName(),
+                user.getEmail(),
+                user.getPhone());
 
         long amountCents = order.getTotalAmount()
                 .multiply(BigDecimal.valueOf(100))
                 .longValueExact();
 
-        Item item = Item.builder()
-                .name("Order " + order.getId())
-                .quantity(1)
-                .amountCents(Math.toIntExact(amountCents))
-                .description("Order Payment")
-                .build();
+        log.info("Amount in cents={}", amountCents);
 
         Bill bill = createPendingBill(order, user, amountCents);
+
+        Item item = Item.builder()
+                .name("Order " + order.getId())
+                .description("Order Payment")
+                .amount((int) bill.getTotalAmountCents())
+                .quantity(1)
+                .build();
+
+        log.info("Bill created:");
+        log.info("Customer Name={}", bill.getCustomerName());
+        log.info("Customer Email={}", bill.getCustomerEmail());
+        log.info("Customer Phone={}", bill.getCustomerPhone());
+        log.info("Bill Amount={}", bill.getTotalAmountCents());
+        log.info("Currency={}", bill.getCurrency());
 
         PaymobIntentionRequest request = PaymobIntentionRequest.builder()
                 .amount(bill.getTotalAmountCents())
@@ -146,22 +178,52 @@ public class PaymentService {
                 .notificationUrl(paymobPropertiesConfig.getNotificationUrl())
                 .redirectionUrl(paymobPropertiesConfig.getRedirectionUrl())
                 .build();
-        PaymobIntentionResponse response = paymobClient.createIntention(request);
 
-        Payment payment = Payment.builder()
-                .orderId(order.getId())
-                .paymobOrderId(String.valueOf(response.getIntentionOrderId()))
-                .clientSecret(response.getClientSecret())
-                .amount(order.getTotalAmount())
-                .currency("EGP")
-                .status(PaymentStatus.INITIATED)
-                .build();
-        paymentRepository.save(payment);
+        log.info("========== Paymob Request ==========");
+        log.info("Amount={}", request.getAmount());
+        log.info("Currency={}", request.getCurrency());
+        log.info("Merchant Order ID={}", request.getMerchantOrderId());
+        log.info("Payment Methods={}", request.getPaymentMethods());
+        log.info("Integration ID={}", paymobPropertiesConfig.getIntegrationId());
+        log.info("Notification URL={}", paymobPropertiesConfig.getNotificationUrl());
+        log.info("Redirection URL={}", paymobPropertiesConfig.getRedirectionUrl());
+        log.info("Customer={}", request.getCustomer());
+        log.info("BillingData={}", request.getBillingData());
+        log.info("Items={}", request.getItems());
 
-        order.setStatus(OrderStatus.PENDING_PAYMENT);
-        orderRepository.save(order);
+        try {
+            log.info("Calling Paymob Intention API...");
 
-        return response.getClientSecret();
+            PaymobIntentionResponse response = paymobClient.createIntention(request);
+
+            log.info("Paymob Response received.");
+            log.info("Client Secret={}", response.getClientSecret());
+            log.info("Intention Order ID={}", response.getIntentionOrderId());
+
+            Payment payment = Payment.builder()
+                    .orderId(order.getId())
+                    .paymobOrderId(String.valueOf(response.getIntentionOrderId()))
+                    .clientSecret(response.getClientSecret())
+                    .amount(order.getTotalAmount())
+                    .currency("EGP")
+                    .status(PaymentStatus.INITIATED)
+                    .build();
+
+            paymentRepository.save(payment);
+            log.info("Payment saved successfully.");
+
+            order.setStatus(OrderStatus.PENDING_PAYMENT);
+            orderRepository.save(order);
+            log.info("Order status updated to PENDING_PAYMENT.");
+
+            log.info("========== Initiate Payment Finished Successfully ==========");
+
+            return response.getClientSecret();
+
+        } catch (Exception ex) {
+            log.error("========== Paymob Intention API Failed ==========", ex);
+            throw ex;
+        }
     }
 
     private Bill createPendingBill(Order order, User user, long amountCents) {
