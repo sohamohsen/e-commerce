@@ -1,7 +1,7 @@
 package com.task.ecommerce.user;
 
 import com.task.ecommerce.entity.User;
-import com.task.ecommerce.security.CartService;
+import com.task.ecommerce.service.CartService;
 import com.task.ecommerce.user.dto.AddToCartRequest;
 import com.task.ecommerce.user.dto.CartResponse;
 import com.task.ecommerce.user.dto.UpdateCartItemRequest;
@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/cart")
+@PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 public class CartController {
 

@@ -1,0 +1,2 @@
+ALTER TABLE user
+    ADD COLUMN password_changed BOOLEAN NOT NULL DEFAULT FALSE;

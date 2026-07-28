@@ -39,6 +39,7 @@ public class User implements UserDetails {
     private Integer failedLoginAttempt;
     private LocalDateTime lockedUntil;
     private boolean accountLocked;
+    private boolean passwordChanged;
 
 
     @CreationTimestamp

@@ -9,5 +9,5 @@ public class StockUpdateRequest {
 
     @NotNull
     @Min(value = 0, message = "Quantity cannot be negative")
-    private Integer quantityChange;
+    private Integer quantity;
 }

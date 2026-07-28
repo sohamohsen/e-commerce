@@ -106,7 +106,7 @@ public class ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BadRequestException("Product not found."));
 
-        int newQuantity = product.getQuantity() + request.getQuantityChange();
+        int newQuantity = product.getQuantity() + request.getQuantity();
         if (newQuantity < 0) {
             throw new BadRequestException("Insufficient stock. Current quantity: " + product.getQuantity());
         }

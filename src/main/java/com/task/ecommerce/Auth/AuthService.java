@@ -60,7 +60,7 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user);
 
-        return buildLoginResponse(user, token);
+        return buildLoginResponse(user, token, user.isPasswordChanged());
     }
 
     private User getAdminUser(String email) {
@@ -154,11 +154,12 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private LoginResponse buildLoginResponse(User user, String token) {
+    private LoginResponse buildLoginResponse(User user, String token, boolean changePassword) {
 
         return LoginResponse.builder()
                 .token(token)
                 .enable(user.isEnabled())
+                .changePassword(changePassword)
                 .build();
     }
 
@@ -179,7 +180,7 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user);
 
-        return buildLoginResponse(user, token);
+        return buildLoginResponse(user, token, true);
     }
 
     private User getCustomerUser(String identifier) {

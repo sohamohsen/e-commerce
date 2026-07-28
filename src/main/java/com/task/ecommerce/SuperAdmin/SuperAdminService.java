@@ -41,7 +41,8 @@ public class SuperAdminService {
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(password))
                 .role(Role.ADMIN)
-                .enabled(false)
+                .enabled(true)
+                .passwordChanged(false)
                 .createdBy(superAdminId)
                 .build();
 
