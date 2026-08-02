@@ -14,6 +14,7 @@ import com.task.ecommerce.user.dto.OrderResponse;
 import com.task.ecommerce.utils.OrderStatusValidator;
 import com.task.ecommerce.utils.PageResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final CartItemRepository cartItemRepository;
@@ -41,9 +43,15 @@ public class OrderService {
     @Transactional
     public OrderResponse checkout(Integer userId) {
 
+        log.info("========== Checkout Started ==========");
+        log.info("Checkout requested for userId={}", userId);
+
         List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
 
+        log.info("Found {} cart item(s) for userId={}", cartItems.size(), userId);
+
         if (cartItems.isEmpty()) {
+            log.warn("Checkout failed: cart is empty for userId={}", userId);
             throw new BadRequestException("Cart is empty.");
         }
 
@@ -52,31 +60,84 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .totalAmount(BigDecimal.ZERO)
                 .build();
+
         order = orderRepository.save(order);
+
+        log.info("Created order with id={} for userId={}", order.getId(), userId);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (CartItem item : cartItems) {
 
+            log.info(
+                    "Processing cart item: productId={}, quantity={}",
+                    item.getProductId(),
+                    item.getQuantity()
+            );
+
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new BadRequestException(
-                            "Product no longer available: " + item.getProductId()));
+                    .orElseThrow(() -> {
+                        log.error("Product {} not found", item.getProductId());
+                        return new BadRequestException(
+                                "Product no longer available: " + item.getProductId());
+                    });
+
+            log.info(
+                    "Loaded product id={}, name={}, availableQuantity={}, active={}",
+                    product.getId(),
+                    product.getName(),
+                    product.getQuantity(),
+                    product.isActive()
+            );
 
             if (!product.isActive()) {
-                throw new BadRequestException("Product is no longer active: " + product.getName());
+                log.warn(
+                        "Checkout failed: product {} is inactive",
+                        product.getId()
+                );
+                throw new BadRequestException(
+                        "Product is no longer active: " + product.getName());
             }
 
             if (product.getQuantity() < item.getQuantity()) {
+
+                log.warn(
+                        "Insufficient stock for productId={}, requested={}, available={}",
+                        product.getId(),
+                        item.getQuantity(),
+                        product.getQuantity()
+                );
+
                 throw new BadRequestException(
-                        "Insufficient stock for " + product.getName()
-                                + ". Available: " + product.getQuantity());
+                        "Insufficient stock for "
+                                + product.getName()
+                                + ". Available: "
+                                + product.getQuantity());
             }
 
+            int oldQuantity = product.getQuantity();
+
             product.setQuantity(product.getQuantity() - item.getQuantity());
+
             productRepository.save(product);
 
-            BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            log.info(
+                    "Updated stock for productId={}, oldQuantity={}, newQuantity={}",
+                    product.getId(),
+                    oldQuantity,
+                    product.getQuantity()
+            );
+
+            BigDecimal lineTotal =
+                    product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+
             totalAmount = totalAmount.add(lineTotal);
+
+            log.info(
+                    "Calculated line total={} for productId={}",
+                    lineTotal,
+                    product.getId()
+            );
 
             OrderItem orderItem = OrderItem.builder()
                     .orderId(order.getId())
@@ -86,12 +147,38 @@ public class OrderService {
                     .build();
 
             orderItemRepository.save(orderItem);
+
+            log.info(
+                    "Saved order item: orderId={}, productId={}, quantity={}",
+                    order.getId(),
+                    product.getId(),
+                    item.getQuantity()
+            );
         }
 
+        log.info("Final order total={}", totalAmount);
+
         order.setTotalAmount(totalAmount);
+
         orderRepository.save(order);
 
+        log.info(
+                "Updated order id={} with totalAmount={}",
+                order.getId(),
+                totalAmount
+        );
+
         cartItemRepository.deleteByUserId(userId);
+
+        log.info("Deleted cart items for userId={}", userId);
+
+        log.info(
+                "Checkout completed successfully. orderId={}, userId={}",
+                order.getId(),
+                userId
+        );
+
+        log.info("========== Checkout Finished ==========");
 
         return OrderResponse.builder()
                 .orderId(order.getId())
@@ -102,9 +189,10 @@ public class OrderService {
 
     @Transactional
     public void expireUnpaidOrders() {
-        LocalDateTime expiryTime = LocalDateTime.now().minusMinutes(15);
+        LocalDateTime expiryTime = LocalDateTime.now().minusMinutes(1);
+        log.info(String.valueOf(expiryTime));
         List<Order> expiredOrders = orderRepository.findByStatusAndCreatedAtBefore(
-                OrderStatus.PENDING, expiryTime);
+                OrderStatus.PENDING_PAYMENT, expiryTime);
 
         for (Order order : expiredOrders) {
             restoreStock(order.getId());

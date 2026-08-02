@@ -16,7 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/payment")
-@PreAuthorize("hasRole('CUSTOMER')")
+//@PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 public class PaymentController {
 
@@ -48,7 +48,7 @@ public class PaymentController {
     public ResponseEntity<Void> webhook(
             @RequestBody TransactionWrapperDto rawBody,
             @RequestParam String hmac) {
-
+    System.out.println("start receiving.");
         paymobHmacService.verifyAndExtract(rawBody, hmac);
 
         paymentService.processWebhook(rawBody);

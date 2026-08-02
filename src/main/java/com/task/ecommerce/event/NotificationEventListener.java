@@ -21,14 +21,42 @@ public class NotificationEventListener {
     private final EmailService emailService;
     private final UserRepository userRepository;
 
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderStatusChanged(OrderStatusChangedEvent event) {
-        notificationService.createNotification(
+
+        log.info(
+                "Received OrderStatusChangedEvent: orderId={}, userId={}, newStatus={}",
+                event.getOrderId(),
                 event.getUserId(),
-                "Order Status Updated",
-                "Your order #" + event.getOrderId() + " status changed to " + event.getNewStatus(),
-                NotificationType.ORDER_STATUS_CHANGED
+                event.getNewStatus()
         );
+
+        try {
+            notificationService.createNotification(
+                    event.getUserId(),
+                    "Order Status Updated",
+                    "Your order #" + event.getOrderId() + " status changed to " + event.getNewStatus(),
+                    NotificationType.ORDER_STATUS_CHANGED
+            );
+
+            log.info(
+                    "Notification created successfully for userId={}, orderId={}",
+                    event.getUserId(),
+                    event.getOrderId()
+            );
+
+        } catch (Exception ex) {
+
+            log.error(
+                    "Failed to create notification for userId={}, orderId={}",
+                    event.getUserId(),
+                    event.getOrderId(),
+                    ex
+            );
+
+            throw ex;
+        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

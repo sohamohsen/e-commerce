@@ -1,6 +1,5 @@
 package com.task.ecommerce.admin;
 
-import com.task.ecommerce.Auth.dto.LoginResponse;
 import com.task.ecommerce.admin.dto.ActivateAccount;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.utils.ReturnObject;

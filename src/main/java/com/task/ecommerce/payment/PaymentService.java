@@ -42,6 +42,9 @@ public class PaymentService {
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
 
+    private static final int PAYMENT_EXPIRATION_SECONDS = 60;
+
+
 
     @Transactional
     public void cancelOrder(Integer orderId, Integer adminId, String reason) {
@@ -89,7 +92,13 @@ public class PaymentService {
     @Transactional
     public String initiatePayment(Integer orderId, Integer userId) {
 
-        log.info("========== Initiate Payment Started ==========");
+        log.info("==================================================");
+        log.info("INITIATE PAYMENT REQUEST");
+        log.info("orderId={}", orderId);
+        log.info("userId={}", userId);
+        log.info("time={}", LocalDateTime.now());
+        log.info("==================================================");
+
         log.info("Order ID: {}, User ID: {}", orderId, userId);
 
         Order order = orderRepository.findById(orderId)
@@ -130,9 +139,20 @@ public class PaymentService {
                 .multiply(BigDecimal.valueOf(100))
                 .longValueExact();
 
-        log.info("Amount in cents={}", amountCents);
+// Log calculated amount
+        log.info("Order Amount={}", order.getTotalAmount());
+        log.info("Amount In Cents={}", amountCents);
 
         Bill bill = createPendingBill(order, user, amountCents);
+
+// Log bill information
+        log.info("========== BILL CREATED ==========");
+        log.info("Bill ID={}", bill.getId());
+        log.info("Invoice={}", bill.getInvoiceNumber());
+        log.info("Status={}", bill.getStatus());
+        log.info("Customer={}", bill.getCustomerEmail());
+        log.info("Amount={}", bill.getTotalAmountCents());
+
 
         Item item = Item.builder()
                 .name("Order " + order.getId())
@@ -148,6 +168,8 @@ public class PaymentService {
         log.info("Bill Amount={}", bill.getTotalAmountCents());
         log.info("Currency={}", bill.getCurrency());
 
+        // Building Paymob request
+        log.info("Building Paymob Intention Request...");
         PaymobIntentionRequest request = PaymobIntentionRequest.builder()
                 .amount(bill.getTotalAmountCents())
                 .currency(bill.getCurrency())
@@ -174,31 +196,33 @@ public class PaymentService {
                         .postalCode("12345")
                         .build())
                 .extras(Collections.emptyMap())
-                .expiration(3600)
-                .notificationUrl(paymobPropertiesConfig.getNotificationUrl())
+                .expiration(PAYMENT_EXPIRATION_SECONDS)
+                .notificationUrl("https://6815-196-219-184-115.ngrok-free.app/api/payment/webhook")
                 .redirectionUrl(paymobPropertiesConfig.getRedirectionUrl())
                 .build();
 
-        log.info("========== Paymob Request ==========");
+        // Log entire request before sending
+        log.info("========== PAYMOB REQUEST ==========");
+        log.info("Merchant Order ID={}", request.getMerchantOrderId());
         log.info("Amount={}", request.getAmount());
         log.info("Currency={}", request.getCurrency());
-        log.info("Merchant Order ID={}", request.getMerchantOrderId());
+        log.info("Expiration={}", request.getExpiration());
         log.info("Payment Methods={}", request.getPaymentMethods());
-        log.info("Integration ID={}", paymobPropertiesConfig.getIntegrationId());
-        log.info("Notification URL={}", paymobPropertiesConfig.getNotificationUrl());
-        log.info("Redirection URL={}", paymobPropertiesConfig.getRedirectionUrl());
         log.info("Customer={}", request.getCustomer());
-        log.info("BillingData={}", request.getBillingData());
+        log.info("Billing Data={}", request.getBillingData());
         log.info("Items={}", request.getItems());
+        log.info("Extras={}", request.getExtras());
 
         try {
             log.info("Calling Paymob Intention API...");
 
             PaymobIntentionResponse response = paymobClient.createIntention(request);
 
-            log.info("Paymob Response received.");
+// Log Paymob response
+            log.info("========== PAYMOB RESPONSE ==========");
             log.info("Client Secret={}", response.getClientSecret());
             log.info("Intention Order ID={}", response.getIntentionOrderId());
+            log.info("Response={}", response);
 
             Payment payment = Payment.builder()
                     .orderId(order.getId())
@@ -209,15 +233,24 @@ public class PaymentService {
                     .status(PaymentStatus.INITIATED)
                     .build();
 
+
             paymentRepository.save(payment);
-            log.info("Payment saved successfully.");
+            paymentRepository.save(payment);
+
+// Payment saved successfully
+            log.info("Payment Saved");
+            log.info("Payment ID={}", payment.getId());
+            log.info("Status={}", payment.getStatus());
+            log.info("Paymob Order ID={}", payment.getPaymobOrderId());
+
 
             order.setStatus(OrderStatus.PENDING_PAYMENT);
             orderRepository.save(order);
             log.info("Order status updated to PENDING_PAYMENT.");
 
             log.info("========== Initiate Payment Finished Successfully ==========");
-
+            log.info("Returning Client Secret To Frontend");
+            log.info("========== PAYMENT INITIATED SUCCESSFULLY ==========");
             return response.getClientSecret();
 
         } catch (Exception ex) {
@@ -227,7 +260,10 @@ public class PaymentService {
     }
 
     private Bill createPendingBill(Order order, User user, long amountCents) {
-
+// Start bill creation
+        log.info("========== CREATE BILL ==========");
+        log.info("Order ID={}", order.getId());
+        log.info("Customer={}", user.getEmail());
         Bill bill = Bill.builder()
                 .invoiceNumber("INV-ORDER-" + order.getId())
                 .orderId(order.getId())
@@ -241,7 +277,17 @@ public class PaymentService {
                 .status(BillStatus.PENDING)
                 .build();
 
-        return billRepository.save(bill);
+        log.info("Saving Bill...");
+
+        Bill savedBill = billRepository.save(bill);
+
+        // Bill saved
+        log.info("Bill Saved Successfully");
+        log.info("Bill ID={}", savedBill.getId());
+        log.info("Invoice={}", savedBill.getInvoiceNumber());
+        log.info("Status={}", savedBill.getStatus());
+
+        return savedBill;
 
     }
 

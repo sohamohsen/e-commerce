@@ -14,7 +14,7 @@ public class PaymentScheduler {
     private final PaymentService paymentService;
     private final OrderService orderService;
 
-    @Scheduled(cron = "0 */10 * * * *")
+    @Scheduled(fixedRate = 600000)
     public void expirePayments() {
 
         log.info("Checking expired orders and payments...");
