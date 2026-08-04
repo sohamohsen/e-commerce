@@ -15,6 +15,7 @@ import {
   adminOrderApi,
   superAdminApi,
   adminAccountApi,
+  chatApi,
 } from './api'
 
 const currency = new Intl.NumberFormat('en-EG', { style: 'currency', currency: 'EGP' })
@@ -259,6 +260,11 @@ function App() {
                 </button>
             )}
             {token && (
+                <button className={page === 'chat' ? 'active' : ''} onClick={() => setPage('chat')}>
+                  {isAdmin ? 'Support Chat' : 'Support'}
+                </button>
+            )}
+            {token && (
                 <button
                     className={page === 'notifications' ? 'active' : ''}
                     onClick={() => {
@@ -387,6 +393,10 @@ function App() {
                     loadUnreadCount()
                   }}
               />
+          )}
+
+          {page === 'chat' && token && (
+              <ChatView isAdmin={isAdmin} show={show} fail={fail} />
           )}
 
           {page === 'admin' && isAdmin && (
@@ -1089,6 +1099,175 @@ function NotificationsView({ notifications, refresh, show, fail, onMarkRead }) {
   )
 }
 
+
+/* ---------------------------------------------------- */
+/* LIVE CHAT */
+/* ---------------------------------------------------- */
+function ChatView({ isAdmin, show, fail }) {
+  const [conversation, setConversation] = useState(null)
+  const [waitingConversations, setWaitingConversations] = useState([])
+  const [messages, setMessages] = useState([])
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+
+  async function loadCurrent() {
+    try {
+      const current = await chatApi.getCurrentConversation()
+      setConversation(current)
+      return current
+    } catch (e) {
+      fail(e.message)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadWaiting() {
+    if (!isAdmin) return
+    try {
+      setWaitingConversations(await chatApi.getWaitingConversations())
+    } catch (e) {
+      fail(e.message)
+    }
+  }
+
+  async function loadMessages(id) {
+    try {
+      setMessages(await chatApi.getMessages(id))
+    } catch (e) {
+      fail(e.message)
+    }
+  }
+
+  useEffect(() => {
+    loadCurrent()
+    loadWaiting()
+    const refresh = window.setInterval(() => {
+      loadCurrent().then((current) => {
+        if (current?.id) loadMessages(current.id)
+      })
+      loadWaiting()
+    }, 3000)
+    return () => window.clearInterval(refresh)
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (conversation?.id) loadMessages(conversation.id)
+    else setMessages([])
+  }, [conversation?.id])
+
+  async function startConversation() {
+    try {
+      const current = await chatApi.startConversation()
+      setConversation(current)
+      show('Your support request has been created. An agent will join shortly.')
+    } catch (e) {
+      fail(e.message)
+    }
+  }
+
+  async function acceptConversation(id) {
+    try {
+      const current = await chatApi.acceptConversation(id)
+      setConversation(current)
+      setWaitingConversations((items) => items.filter((item) => item.id !== id))
+      show('Conversation accepted.')
+    } catch (e) {
+      fail(e.message)
+    }
+  }
+
+  async function sendMessage(event) {
+    event.preventDefault()
+    const content = message.trim()
+    if (!content || !conversation?.id) return
+    setSending(true)
+    try {
+      const sent = await chatApi.sendMessage(conversation.id, content)
+      setMessages((items) => [...items, sent])
+      setMessage('')
+    } catch (e) {
+      fail(e.message)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function closeConversation() {
+    if (!conversation || !window.confirm('Close this support conversation?')) return
+    try {
+      await chatApi.closeConversation(conversation.id)
+      setConversation(null)
+      setMessages([])
+      show('Conversation closed.')
+    } catch (e) {
+      fail(e.message)
+    }
+  }
+
+  if (loading) return <div className="empty">Loading support chat…</div>
+
+  return (
+      <section className="chat-layout">
+        <aside className="chat-sidebar">
+          <p className="eyebrow">LIVE SUPPORT</p>
+          <h2>{isAdmin ? 'Support queue' : 'Need help?'}</h2>
+          {isAdmin ? (
+              <>
+                <p className="muted">Accept one waiting customer to begin helping them.</p>
+                {conversation && <div className="chat-current">You are helping customer #{conversation.customerId}.</div>}
+                <div className="chat-queue">
+                  {waitingConversations.length === 0 ? <p className="muted">No customers are waiting.</p> : waitingConversations.map((item) => (
+                      <div className="chat-queue-item" key={item.id}>
+                        <span>Customer #{item.customerId}</span>
+                        <button className="primary small" disabled={Boolean(conversation)} onClick={() => acceptConversation(item.id)}>Accept</button>
+                      </div>
+                  ))}
+                </div>
+              </>
+          ) : !conversation ? (
+              <>
+                <p className="muted">Start a conversation and our support team will be notified.</p>
+                <button className="primary" onClick={startConversation}>Start support chat</button>
+              </>
+          ) : (
+              <div className={`chat-state ${conversation.status.toLowerCase()}`}>
+                {conversation.status === 'WAITING' ? 'Waiting for a support agent…' : 'A support agent is connected.'}
+              </div>
+          )}
+        </aside>
+
+        <div className="chat-panel">
+          {!conversation ? (
+              <div className="empty">{isAdmin ? 'Choose a customer from the queue.' : 'Start a chat whenever you need help.'}</div>
+          ) : (
+              <>
+                <div className="chat-header">
+                  <div><strong>{isAdmin ? `Customer #${conversation.customerId}` : 'Customer Support'}</strong><span>{conversation.status === 'WAITING' ? 'Waiting' : 'Active'}</span></div>
+                  <button className="ghost small" onClick={closeConversation}>Close chat</button>
+                </div>
+                <div className="chat-messages">
+                  {messages.length === 0 && <p className="muted">No messages yet. Say hello to get started.</p>}
+                  {messages.map((item) => (
+                      <div className="chat-message" key={item.id}>
+                        <span className="chat-sender">{String(item.senderId) === String(conversation.customerId) ? 'Customer' : 'Support'}</span>
+                        <p>{item.content}</p>
+                        <time>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</time>
+                      </div>
+                  ))}
+                </div>
+                <form className="chat-compose" onSubmit={sendMessage}>
+                  <input value={message} onChange={(event) => setMessage(event.target.value)} maxLength="2000" disabled={conversation.status !== 'ACTIVE'} placeholder={conversation.status === 'ACTIVE' ? 'Write a message…' : 'Waiting for an agent…'} />
+                  <button className="primary" disabled={sending || conversation.status !== 'ACTIVE'}>{sending ? 'Sending…' : 'Send'}</button>
+                </form>
+              </>
+          )}
+        </div>
+      </section>
+  )
+}
 
 /* ---------------------------------------------------- */
 /* ADMIN DASHBOARD */

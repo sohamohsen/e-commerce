@@ -4,6 +4,8 @@ import com.task.ecommerce.admin.dto.ProductResponse;
 import com.task.ecommerce.service.ProductService;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +17,12 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/product")
 @RequiredArgsConstructor
+@Tag(name = "Products (Public)", description = "Public endpoints for browsing products and product details")
 public class ProductController {
 
     private final ProductService productService;
 
+    @Operation(summary = "Get paginated products", description = "Fetch products with optional filters for category, name, price range, and sorting.")
     @GetMapping
     public ResponseEntity<?> getProducts(
             @RequestParam(defaultValue = "0") int page,
@@ -44,6 +48,7 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get product details by ID", description = "Fetch detailed information for a specific product.")
     @GetMapping("/{productId}")
     public ResponseEntity<?> getProduct(@PathVariable Integer productId) {
         ProductResponse product = productService.getPublicProduct(productId);

@@ -5,6 +5,8 @@ import com.task.ecommerce.Auth.dto.LoginRequest;
 import com.task.ecommerce.Auth.dto.LoginResponse;
 import com.task.ecommerce.Auth.dto.RegistrationRequest;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +19,11 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Endpoints for customer registration, customer login, and admin login")
 public class AuthController {
     private final AuthService authService;
 
+    @Operation(summary = "Register new customer", description = "Registers a new customer account.")
     @PostMapping("/customer/register")
     public ResponseEntity<?> registration(
             @RequestBody @Valid RegistrationRequest register,
@@ -37,6 +41,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Admin login", description = "Authenticates an admin user and returns a JWT token.")
     @PostMapping("/admin/login")
     public ResponseEntity<?> adminLogin(
             @RequestBody @Valid AdminLoginRequest login,
@@ -54,6 +59,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Customer login", description = "Authenticates a customer and returns a JWT token.")
     @PostMapping("/customer/login")
     public ResponseEntity<?> userLogin(
             @RequestBody @Valid LoginRequest login,

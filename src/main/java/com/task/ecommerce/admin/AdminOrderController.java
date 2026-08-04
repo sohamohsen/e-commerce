@@ -9,6 +9,8 @@ import com.task.ecommerce.payment.PaymentService;
 import com.task.ecommerce.service.dto.OrderSummaryResponse;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +26,13 @@ import java.time.LocalDateTime;
 @RequestMapping("/admin-orders")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
+@Tag(name = "Orders (Admin)", description = "Admin management for viewing orders, updating statuses, and processing cancellations/refunds")
 public class AdminOrderController {
 
     private final OrderService orderService;
     private final PaymentService paymentService;
 
+    @Operation(summary = "Get all orders", description = "Fetch all customer orders across the platform with optional status filter.")
     @GetMapping
     public ResponseEntity<?> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
@@ -47,6 +51,7 @@ public class AdminOrderController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get order details", description = "Fetch full details of any customer order by ID.")
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrderDetails(
             @PathVariable Integer orderId
@@ -63,6 +68,7 @@ public class AdminOrderController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Update order status", description = "Updates order status (e.g. PROCESSING, SHIPPED, DELIVERED).")
     @PatchMapping("/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Integer orderId,
@@ -80,6 +86,7 @@ public class AdminOrderController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Cancel order & process refund", description = "Cancels an order and initiates a Paymob refund if applicable.")
     @PostMapping("/{orderId}/cancel")
     public ResponseEntity<?> cancelOrder(
             @PathVariable Integer orderId,

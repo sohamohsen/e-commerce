@@ -178,3 +178,14 @@ export const superAdminApi = {
 export const adminAccountApi = {
   activateAccount: (password) => api('/admin/enable', { method: 'POST', body: { password } }),
 }
+
+// Customer support chat API endpoints
+export const chatApi = {
+  startConversation: () => api('/chat/conversation', { method: 'POST' }),
+  getCurrentConversation: () => api('/chat/conversations/current'),
+  getWaitingConversations: () => api('/chat/conversations/waiting'),
+  acceptConversation: (id) => api(`/chat/conversations/${id}/accept`, { method: 'POST' }),
+  getMessages: (id) => api(`/chat/conversations/${id}/messages`),
+  sendMessage: (id, content) => api(`/chat/conversations/${id}/messages`, { method: 'POST', body: { content } }),
+  closeConversation: (id) => api(`/chat/conversations/${id}/close`, { method: 'POST' }),
+}

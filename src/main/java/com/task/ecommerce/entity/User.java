@@ -36,7 +36,7 @@ public class User implements UserDetails {
     private Role role;
 
     private Boolean enabled;
-    private Integer failedLoginAttempt;
+    private Integer failedLoginAttempt = 0;
     private LocalDateTime lockedUntil;
     private boolean accountLocked;
     private boolean passwordChanged;

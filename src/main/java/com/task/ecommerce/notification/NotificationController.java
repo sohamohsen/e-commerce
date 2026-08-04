@@ -5,6 +5,8 @@ import com.task.ecommerce.notification.dto.NotificationCount;
 import com.task.ecommerce.notification.dto.NotificationResponse;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +18,12 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
+@Tag(name = "Notifications", description = "Endpoints for fetching and managing user notifications and unread counts")
 public class NotificationController {
 
     private final NotificationService notificationService;
 
+    @Operation(summary = "Get user notifications", description = "Fetch a paginated list of notifications for the authenticated user.")
     @GetMapping
     public ResponseEntity<?> getNotifications(
             @RequestParam(defaultValue = "0") int page,
@@ -40,6 +44,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Mark notification as read", description = "Marks a specific notification by ID as read.")
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<?> markAsRead(
             @PathVariable Integer notificationId,
@@ -57,6 +62,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Mark all notifications as read", description = "Marks all unread notifications for the user as read.")
     @PatchMapping("/read-all")
     public ResponseEntity<?> markAsAllReaded(
             @AuthenticationPrincipal User user
@@ -73,6 +79,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get unread notification count", description = "Retrieves the count of unread notifications for the authenticated user.")
     @GetMapping("/count")
     public ResponseEntity<?> getNotificationsUnreadedCount(
             @AuthenticationPrincipal User user

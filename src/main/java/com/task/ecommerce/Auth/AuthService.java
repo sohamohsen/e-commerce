@@ -1,6 +1,7 @@
 package com.task.ecommerce.Auth;
 
 import com.task.ecommerce.Auth.dto.AdminLoginRequest;
+import org.springframework.security.core.AuthenticationException;
 import com.task.ecommerce.Auth.dto.LoginRequest;
 import com.task.ecommerce.Auth.dto.LoginResponse;
 import com.task.ecommerce.Auth.dto.RegistrationRequest;
@@ -15,9 +16,7 @@ import com.task.ecommerce.service.RateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -109,8 +108,6 @@ public class AuthService {
         log.info("Authenticating userId={}, email={}", user.getId(), user.getEmail());
 
         try {
-            log.info("password={}", passwordEncoder.encode(password));
-
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             String.valueOf(user.getId()),
@@ -122,22 +119,42 @@ public class AuthService {
 
         } catch (BadCredentialsException ex) {
 
-            log.warn("Authentication failed for userId={}", user.getId());
+            log.warn("Authentication failed for userId={}", user.getId(), ex);
 
             handleFailedLogin(user);
 
             throw new BadRequestException("Invalid email or password");
+
+        } catch (LockedException ex) {
+
+            throw new BadRequestException("Your account is locked. Please try again later.");
+
+        } catch (DisabledException ex) {
+
+            throw new BadRequestException("Your account is disabled.");
+
+        } catch (AuthenticationException ex) {
+
+            log.error("Authentication error", ex);
+
+            throw new BadRequestException(ex.getMessage());
         }
     }
 
     private void handleFailedLogin(User user) {
 
-        user.setFailedLoginAttempt(user.getFailedLoginAttempt() + 1);
+        int attempts = user.getFailedLoginAttempt() == null
+                ? 0
+                : user.getFailedLoginAttempt();
 
-        if (user.getFailedLoginAttempt() >= PERMANENT_LOCK_ATTEMPTS) {
+        attempts++;
+
+        user.setFailedLoginAttempt(attempts);
+
+        if (attempts >= PERMANENT_LOCK_ATTEMPTS) {
             user.setAccountLocked(true);
 
-        } else if (user.getFailedLoginAttempt() % TEMP_LOCK_ATTEMPTS == 0) {
+        } else if (attempts % TEMP_LOCK_ATTEMPTS == 0) {
             user.setLockedUntil(
                     LocalDateTime.now().plusMinutes(TEMP_LOCK_MINUTES)
             );

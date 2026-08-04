@@ -8,6 +8,8 @@ import com.task.ecommerce.service.dto.OrderSummaryResponse;
 import com.task.ecommerce.user.dto.OrderResponse;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,9 +23,11 @@ import java.time.LocalDateTime;
 @RequestMapping("/orders")
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
+@Tag(name = "Orders (Customer)", description = "Customer endpoints for checking out and viewing orders")
 public class OrderController {
     private final OrderService orderService;
 
+    @Operation(summary = "Checkout cart to create order", description = "Converts items in the customer's cart into a placed order.")
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(@AuthenticationPrincipal User user) {
         OrderResponse order = orderService.checkout(user.getId());
@@ -38,6 +42,7 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Get customer orders", description = "Fetch a paginated list of orders placed by the current customer.")
     @GetMapping
     public ResponseEntity<?> getCustomerOrders(
             @RequestParam(defaultValue = "0") int page,
@@ -57,6 +62,7 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get order details", description = "Fetch detailed information for a specific order owned by the customer.")
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrderDetails(
             @PathVariable Integer orderId,

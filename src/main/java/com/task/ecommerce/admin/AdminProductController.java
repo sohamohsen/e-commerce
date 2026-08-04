@@ -7,6 +7,8 @@ import com.task.ecommerce.entity.User;
 import com.task.ecommerce.service.ProductService;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,12 @@ import java.time.LocalDateTime;
 @RequestMapping("/admin-products")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
+@Tag(name = "Products (Admin)", description = "Admin endpoints for creating, updating, soft-deleting, and managing product inventory")
 public class AdminProductController {
 
     private final ProductService productService;
 
+    @Operation(summary = "Create product", description = "Adds a new product with optional image upload.")
     @PostMapping("")
     public ResponseEntity<?> addProduct(
             @RequestPart @Valid ProductRequest request,
@@ -45,6 +49,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Get product by ID", description = "Retrieves product details for admin management.")
     @GetMapping("/{productId}")
     public ResponseEntity<?> getProduct(
             @PathVariable Integer productId
@@ -61,6 +66,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Update product", description = "Updates details and optionally replaces the image of a product.")
     @PatchMapping("/{productId}")
     public ResponseEntity<?> updateProduct(
             @PathVariable Integer productId,
@@ -80,6 +86,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Update product stock", description = "Updates inventory stock quantity for a product.")
     @PatchMapping("/{productId}/stock")
     public ResponseEntity<?> updateProductStock(
             @PathVariable Integer productId,
@@ -98,6 +105,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Toggle product active status", description = "Activates or deactivates a product.")
     @PatchMapping("/{productId}/status")
     public ResponseEntity<?> updateProductStatus(
             @PathVariable Integer productId,
@@ -115,6 +123,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Delete product", description = "Super Admin only endpoint to delete a product.")
     @DeleteMapping("/{productId}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteProduct(
@@ -132,6 +141,7 @@ public class AdminProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Get products (Admin)", description = "Fetch products with admin filters including active status and max stock levels.")
     @GetMapping
     public ResponseEntity<?> getProducts(
             @RequestParam(defaultValue = "0") int page,

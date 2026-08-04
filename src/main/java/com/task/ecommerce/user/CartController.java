@@ -6,6 +6,8 @@ import com.task.ecommerce.user.dto.AddToCartRequest;
 import com.task.ecommerce.user.dto.CartResponse;
 import com.task.ecommerce.user.dto.UpdateCartItemRequest;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,10 +22,12 @@ import java.time.LocalDateTime;
 @RequestMapping("/cart")
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
+@Tag(name = "Shopping Cart", description = "Customer endpoints for managing cart items and quantities")
 public class CartController {
 
     private final CartService cartService;
 
+    @Operation(summary = "Add item to cart", description = "Adds a product to the user's shopping cart.")
     @PostMapping("/items")
     public ResponseEntity<?> addToCart(
             @RequestBody @Valid AddToCartRequest request,
@@ -42,6 +46,7 @@ public class CartController {
 
     }
 
+    @Operation(summary = "Get user cart", description = "Retrieves the current customer's active shopping cart.")
     @GetMapping
     public ResponseEntity<?> getCart(
             @AuthenticationPrincipal User user
@@ -59,6 +64,7 @@ public class CartController {
 
     }
 
+    @Operation(summary = "Update cart item", description = "Updates quantity or details of a specific item in the cart.")
     @PatchMapping("/items/{cartItemId}")
     public ResponseEntity<?> updateCartItem(
             @PathVariable Integer cartItemId,
@@ -77,6 +83,7 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Remove item from cart", description = "Deletes a product item from the customer's cart.")
     @DeleteMapping("/items/{cartItemId}")
     public ResponseEntity<?> removeCartItem(
             @PathVariable Integer cartItemId,

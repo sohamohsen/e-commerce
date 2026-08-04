@@ -4,6 +4,8 @@ import com.task.ecommerce.SuperAdmin.dto.AdminAccount;
 import com.task.ecommerce.SuperAdmin.dto.CreateAdminAccount;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,10 +20,12 @@ import java.time.LocalDateTime;
 @RequestMapping("/super-admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('SUPER_ADMIN')")
+@Tag(name = "Super Admin Management", description = "Privileged endpoints for managing admin accounts and locking/unlocking user accounts")
 public class SuperAdminController {
 
     private final SuperAdminService superAdminService;
 
+    @Operation(summary = "Create admin account", description = "Allows Super Admin to provision a new admin user.")
     @PostMapping("/admin")
     public ResponseEntity<ReturnObject> createAdminAccount(
             @RequestBody @Valid CreateAdminAccount request,
@@ -40,6 +44,7 @@ public class SuperAdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Toggle account lock status", description = "Locks or unlocks a user/admin account.")
     @PostMapping("/lock-account/{userId}")
     public ResponseEntity<ReturnObject> lockAccount(
             @PathVariable Integer userId,

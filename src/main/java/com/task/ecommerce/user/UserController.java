@@ -1,6 +1,8 @@
 package com.task.ecommerce.user;
 
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,10 +19,12 @@ import java.time.LocalDateTime;
 @RequestMapping("/user")
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
+@Tag(name = "User Management", description = "Customer profile and session endpoints")
 public class UserController {
 
     private final UserService userService;
 
+    @Operation(summary = "Customer logout", description = "Logs out the active customer session by invalidating the token.")
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             @RequestHeader HttpServletRequest request

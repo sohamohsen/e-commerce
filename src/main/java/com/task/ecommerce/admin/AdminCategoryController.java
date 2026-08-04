@@ -6,6 +6,8 @@ import com.task.ecommerce.entity.User;
 import com.task.ecommerce.service.CategoryService;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,10 +22,12 @@ import java.time.LocalDateTime;
 @RequestMapping("/admin-categories")
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
+@Tag(name = "Categories (Admin)", description = "Admin management of product categories")
 public class AdminCategoryController {
 
     private final CategoryService categoryService;
 
+    @Operation(summary = "Create category", description = "Adds a new product category.")
     @PostMapping("")
     public ResponseEntity<?> addCategory(
             @RequestBody @Valid CategoryRequest request,
@@ -41,6 +45,7 @@ public class AdminCategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Get category by ID", description = "Retrieves specific category details for admin.")
     @GetMapping("/{categoryId}")
     public ResponseEntity<?> getCategory(
             @PathVariable Integer categoryId
@@ -57,6 +62,7 @@ public class AdminCategoryController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Update category", description = "Updates details of an existing category.")
     @PatchMapping("/{categoryId}")
     public ResponseEntity<?> updateCategory(
             @PathVariable Integer categoryId,
@@ -75,6 +81,7 @@ public class AdminCategoryController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Delete category", description = "Super Admin only endpoint to remove a category.")
     @DeleteMapping("/{categoryId}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> deleteCategory(
@@ -92,6 +99,7 @@ public class AdminCategoryController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "Get categories (Admin)", description = "Fetch paginated list of categories including inactive ones for management.")
     @GetMapping
     public ResponseEntity<?> getCategories(
             @RequestParam(defaultValue = "0") int page,
