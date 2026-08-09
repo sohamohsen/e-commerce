@@ -1,24 +1,40 @@
 package com.task.ecommerce.SuperAdmin;
 
 import com.task.ecommerce.SuperAdmin.dto.AdminAccount;
+import com.task.ecommerce.SuperAdmin.dto.AdminResponse;
 import com.task.ecommerce.SuperAdmin.dto.CreateAdminAccount;
+import com.task.ecommerce.admin.dto.CategoryResponse;
+import com.task.ecommerce.admin.dto.ProductResponse;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.entity.enums.Role;
+import com.task.ecommerce.event.AdminTemporaryPasswordGeneratedEvent;
 import com.task.ecommerce.repository.UserRepository;
+import com.task.ecommerce.utils.PageResponse;
 import lombok.RequiredArgsConstructor;
 import com.task.ecommerce.exception.BadRequestException;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class SuperAdminService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
+    private static final java.util.Set<String> ALLOWED_SORT_FIELDS =
+            java.util.Set.of("name", "price", "quantity", "createdAt", "updatedAt");
     private static final int PASSWORD_LENGTH = 12;
     private static final String CHARACTERS =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -85,5 +101,67 @@ public class SuperAdminService {
         user.setUpdatedBy(superAdminId);
 
         userRepository.save(user);
+    }
+
+    @Transactional
+    public String ChangeAdminPassword(Integer userId, Integer id) {
+
+        User superAdmin = userRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("admin not found"));
+
+        if (admin.getRole() != Role.ADMIN) {
+            throw new BadRequestException("User is not an admin.");
+        }
+
+
+        String password = generateRandomPassword();
+
+        admin.setPassword(passwordEncoder.encode(password));
+        admin.setPasswordChanged(false);
+        admin.setUpdatedBy(superAdmin.getId());
+
+        userRepository.save(admin);
+
+//        eventPublisher.publishEvent(
+//                new AdminTemporaryPasswordGeneratedEvent(
+//                        user.getId(),
+//                        user.getEmail(),
+//                        temporaryPassword
+//                )
+        return password;
+    }
+
+    public PageResponse<AdminResponse> getAllAdmins(int page, int size, String sortBy, String sortDir, String search, Boolean enabled, Boolean accountLocked, Boolean passwordChanged, LocalDateTime createdFrom, LocalDateTime createdTo) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+
+        Page<User> admins = userRepository.findAdmins(search, enabled, accountLocked, passwordChanged, createdFrom, createdTo, pageable);
+
+        List<AdminResponse> adminsResponse = admins.getContent()
+                .stream()
+                .map(admin -> AdminResponse.builder()
+                        .id(admin.getId())
+                        .name(admin.getName())
+                        .email(admin.getEmail())
+                        .phone(admin.getPhone())
+                        .enabled(admin.getEnabled())
+                        .accountLocked(admin.isAccountLocked())
+                        .passwordChanged(admin.isPasswordChanged())
+                        .createdAt(admin.getCreatedAt())
+                        .build())
+                .toList();
+
+        return PageResponse.<AdminResponse>builder()
+                .items(adminsResponse)
+                .page(admins.getNumber())
+                .size(admins.getSize())
+                .totalElements(admins.getTotalElements())
+                .totalPages(admins.getTotalPages())
+                .first(admins.isFirst())
+                .last(admins.isLast())
+                .build();
+
     }
 }

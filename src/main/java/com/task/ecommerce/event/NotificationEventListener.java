@@ -77,7 +77,7 @@ public class NotificationEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onAdminAccountCreated(AdminAccountCreatedEvent event) {
+    public void onAdminAccountCreated(AdminTemporaryPasswordGeneratedEvent event) {
         notificationService.createNotification(
                 event.getAdminUserId(), "Account Created",
                 "Your admin account has been created. Check your email for login credentials.",
@@ -110,7 +110,7 @@ public class NotificationEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onAdminAccountCreatedSendEmail(AdminAccountCreatedEvent event) {
+    public void onAdminAccountCreatedSendEmail(AdminTemporaryPasswordGeneratedEvent event) {
         String html = EmailTemplates.adminAccountCreated(event.getEmail(), event.getTemporaryPassword());
         emailService.sendSimpleEmail(event.getEmail(), "Your Admin Account", html);
     }

@@ -1987,7 +1987,45 @@ function SuperAdminDashboard({ show, fail }) {
     phone: '',
   })
 
-  const [lockUserId, setLockUserId] = useState('')
+  const [admins, setAdmins] = useState([])
+  const [adminsLoading, setAdminsLoading] = useState(true)
+  const [adminSearch, setAdminSearch] = useState('')
+  const [adminFilters, setAdminFilters] = useState({
+    enabled: '',
+    accountLocked: '',
+    passwordChanged: '',
+  })
+  const [resetPassword, setResetPassword] = useState('')
+
+  async function loadAdmins(search = adminSearch, filters = adminFilters) {
+    try {
+      setAdminsLoading(true)
+      const response = await superAdminApi.getAdmins({
+        page: 0,
+        size: 100,
+        sortBy: 'name',
+        sortDir: 'asc',
+        search: search || undefined,
+        enabled: filters.enabled === '' ? undefined : filters.enabled === 'true',
+        accountLocked: filters.accountLocked === '' ? undefined : filters.accountLocked === 'true',
+        passwordChanged: filters.passwordChanged === '' ? undefined : filters.passwordChanged === 'true',
+      })
+      setAdmins(response?.items || [])
+    } catch (e) {
+      fail(e.message)
+    } finally {
+      setAdminsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadAdmins()
+  }, [])
+
+  function handleAdminSearch(event) {
+    event.preventDefault()
+    loadAdmins()
+  }
 
   async function handleCreateAdmin(e) {
     e.preventDefault()
@@ -2003,22 +2041,31 @@ function SuperAdminDashboard({ show, fail }) {
         password: '',
         phone: '',
       })
+      loadAdmins()
     } catch (e) {
       fail(e.message)
     }
   }
 
-  async function handleToggleLock(e) {
-    e.preventDefault()
-
-    if (!lockUserId) return
+  async function handleAdminLockToggle(admin) {
+    const action = admin.accountLocked ? 'unlock' : 'lock'
+    if (!window.confirm(`Are you sure you want to ${action} ${admin.name}'s account?`)) return
 
     try {
-      await superAdminApi.toggleLockAccount(Number(lockUserId))
+      await superAdminApi.toggleLockAccount(admin.id)
+      show(`${admin.name}'s account was ${action}ed successfully.`)
+      loadAdmins()
+    } catch (e) {
+      fail(e.message)
+    }
+  }
 
-      show('Account lock status updated successfully!')
-
-      setLockUserId('')
+  async function handleResetPassword(userId) {
+    if (!window.confirm('Generate a new temporary password for this admin?')) return
+    try {
+      const newPassword = await superAdminApi.resetPassword(userId)
+      setResetPassword(typeof newPassword === 'string' ? newPassword : newPassword?.password || '')
+      show('Password reset successfully. Copy the temporary password below and share it securely.')
     } catch (e) {
       fail(e.message)
     }
@@ -2109,30 +2156,83 @@ function SuperAdminDashboard({ show, fail }) {
             </button>
           </form>
 
-          <form
-              className="admin-form"
-              onSubmit={handleToggleLock}
-          >
-            <h2>Lock / Unlock User Account</h2>
+          <div className="admin-form admin-list">
+            <div className="section-title compact-title">
+              <div>
+                <p className="eyebrow">ADMIN ACCOUNTS</p>
+                <h2>Manage Admin Passwords</h2>
+              </div>
+              <button className="ghost small" onClick={() => loadAdmins()}>Refresh</button>
+            </div>
 
-            <label className="field">
-              User ID
-              <input
-                  type="number"
-                  value={lockUserId}
-                  onChange={(e) => setLockUserId(e.target.value)}
-                  required
-                  placeholder="Example: 12"
-              />
-            </label>
+            <form className="admin-filters" onSubmit={handleAdminSearch}>
+              <label className="admin-search-field">
+                <span>Search</span>
+                <input
+                    value={adminSearch}
+                    onChange={(event) => setAdminSearch(event.target.value)}
+                    placeholder="Name, email, or phone"
+                    aria-label="Search admin accounts"
+                />
+              </label>
+              <label>
+                <span>Account</span>
+                <select value={adminFilters.enabled} onChange={(event) => setAdminFilters({ ...adminFilters, enabled: event.target.value })}>
+                  <option value="">All</option><option value="true">Enabled</option><option value="false">Disabled</option>
+                </select>
+              </label>
+              <label>
+                <span>Lock status</span>
+                <select value={adminFilters.accountLocked} onChange={(event) => setAdminFilters({ ...adminFilters, accountLocked: event.target.value })}>
+                  <option value="">All</option><option value="false">Unlocked</option><option value="true">Locked</option>
+                </select>
+              </label>
+              <label>
+                <span>Password</span>
+                <select value={adminFilters.passwordChanged} onChange={(event) => setAdminFilters({ ...adminFilters, passwordChanged: event.target.value })}>
+                  <option value="">All</option><option value="true">Changed</option><option value="false">Temporary</option>
+                </select>
+              </label>
+              <div className="admin-filter-actions">
+                <button className="primary small">Apply filters</button>
+                <button type="button" className="ghost small" onClick={() => {
+                  const clearedFilters = { enabled: '', accountLocked: '', passwordChanged: '' }
+                  setAdminSearch('')
+                  setAdminFilters(clearedFilters)
+                  loadAdmins('', clearedFilters)
+                }}>Clear</button>
+              </div>
+            </form>
 
-            <button
-                className="danger-button wide"
-                style={{ marginTop: '1.2rem' }}
-            >
-              Change Lock Status
-            </button>
-          </form>
+            {resetPassword && (
+                <div className="password-reset-result" role="status">
+                  <span>Temporary password — copy it now:</span>
+                  <code>{resetPassword}</code>
+                  <button type="button" className="ghost small" onClick={() => navigator.clipboard?.writeText(resetPassword)}>
+                    Copy
+                  </button>
+                </div>
+            )}
+            <div className="table-wrap">
+              <table className="admin-table">
+                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Account</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {adminsLoading ? <tr><td colSpan="5">Loading admins…</td></tr> : admins.length === 0 ? <tr><td colSpan="5">No admin accounts found.</td></tr> : admins.map((admin) => (
+                      <tr key={admin.id}>
+                        <td>{admin.name}</td><td>{admin.email}</td><td>{admin.phone || '—'}</td>
+                        <td><span className={`admin-account-status ${admin.accountLocked ? 'locked' : admin.enabled ? 'enabled' : 'disabled'}`}>{admin.accountLocked ? 'Locked' : admin.enabled ? 'Enabled' : 'Disabled'}</span></td>
+                        <td className="admin-row-actions">
+                          <button className="primary small" onClick={() => handleResetPassword(admin.id)}>Reset password</button>
+                          <button className={admin.accountLocked ? 'primary small' : 'danger-button small'} onClick={() => handleAdminLockToggle(admin)}>
+                            {admin.accountLocked ? 'Unlock' : 'Lock'}
+                          </button>
+                        </td>
+                      </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
   )

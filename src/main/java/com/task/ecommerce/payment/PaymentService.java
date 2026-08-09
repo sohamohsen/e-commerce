@@ -42,7 +42,7 @@ public class PaymentService {
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static final int PAYMENT_EXPIRATION_SECONDS = 60;
+    private static final int PAYMENT_EXPIRATION_SECONDS = 240;
 
 
 
@@ -197,8 +197,8 @@ public class PaymentService {
                         .build())
                 .extras(Collections.emptyMap())
                 .expiration(PAYMENT_EXPIRATION_SECONDS)
-                .notificationUrl("https://6815-196-219-184-115.ngrok-free.app/api/payment/webhook")
-                .redirectionUrl(paymobPropertiesConfig.getRedirectionUrl())
+                .notificationUrl("https://8def-41-45-37-133.ngrok-free.app/api/payment/webhook")
+                .redirectionUrl("https://a079-41-45-37-133.ngrok-free.app")
                 .build();
 
         // Log entire request before sending

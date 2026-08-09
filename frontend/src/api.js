@@ -172,6 +172,8 @@ export const adminOrderApi = {
 export const superAdminApi = {
   createAdmin: (data) => api('/super-admin/admin', { method: 'POST', body: data }),
   toggleLockAccount: (userId) => api(`/super-admin/lock-account/${userId}`, { method: 'POST' }),
+  resetPassword: (userId) => api(`/super-admin/reset-Password/${userId}`, { method: 'POST' }),
+  getAdmins: (query) => api('/super-admin/admins', { query }),
 }
 
 // Admin Account API endpoints
