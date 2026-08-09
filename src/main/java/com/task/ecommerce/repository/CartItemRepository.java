@@ -40,4 +40,26 @@ public interface CartItemRepository extends JpaRepository<CartItem, Integer> {
     List<Integer> findCollaborativeRecommendations(
             @Param("userId") Integer userId
     );
+
+    @Query(value = """
+    SELECT oi2.product_id
+    FROM order_item oi1
+    JOIN orders o ON o.id = oi1.order_id
+    JOIN order_item oi2 ON oi2.order_id = oi1.order_id
+    WHERE oi1.product_id = :productId
+      AND o.user_id != :userId
+      AND oi2.product_id != :productId
+      AND oi2.product_id NOT IN (
+          SELECT ci.product_id
+          FROM cart_item ci
+          WHERE ci.user_id = :userId
+      )
+    GROUP BY oi2.product_id
+    ORDER BY COUNT(DISTINCT oi1.order_id) DESC
+    LIMIT 5
+    """, nativeQuery = true)
+    List<Integer> findCollaborativeRecommendationsForProduct(
+            @Param("userId") Integer userId,
+            @Param("productId") Integer productId
+    );
 }

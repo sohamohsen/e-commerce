@@ -43,7 +43,7 @@ function App() {
   const [totalProducts, setTotalProducts] = useState(0)
   const [shopRecommendations, setShopRecommendations] = useState([])
   const [shopRecommendationsLoading, setShopRecommendationsLoading] = useState(false)
-  const [cartRecommendations, setCartRecommendations] = useState([])
+  const [cartRecommendations, setCartRecommendations] = useState({})
   const [cartRecommendationsLoading, setCartRecommendationsLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [cart, setCart] = useState(null)
@@ -140,27 +140,39 @@ function App() {
 
   async function loadCartRecommendations() {
     if (!token || isAdmin) {
-      setCartRecommendations([])
+      setCartRecommendations({})
+      setCartRecommendationsLoading(false)
+      return
+    }
+
+    const cartItems = cart?.items || []
+    if (!cartItems.length) {
+      setCartRecommendations({})
       setCartRecommendationsLoading(false)
       return
     }
 
     setCartRecommendationsLoading(true)
+    const entries = await Promise.all(
+        cartItems.map(async (cartItem) => {
+          try {
+            const items = await recommendationApi.getProductRecommendations(cartItem.productId)
+            const products = (Array.isArray(items) ? items : []).map(
+                ({ productId, productName, productPrice, productDescription }) => ({
+                  id: productId,
+                  name: productName,
+                  price: productPrice,
+                  description: productDescription,
+                })
+            )
+            return [cartItem.productId, products]
+          } catch {
+            return [cartItem.productId, []]
+          }
+        })
+    )
     try {
-      const items = await recommendationApi.getProductRecommendations()
-      setCartRecommendations(
-          (Array.isArray(items) ? items : []).map(
-              ({ productId, productName, productPrice, productDescription }) => ({
-                id: productId,
-                name: productName,
-                price: productPrice,
-                description: productDescription,
-                recommendationReason: 'Recommended based on similar purchases',
-              })
-          )
-      )
-    } catch {
-      setCartRecommendations([])
+      setCartRecommendations(Object.fromEntries(entries))
     } finally {
       setCartRecommendationsLoading(false)
     }
@@ -231,7 +243,7 @@ function App() {
     } else {
       setUnreadCount(0)
       setShopRecommendations([])
-      setCartRecommendations([])
+      setCartRecommendations({})
     }
   }, [token])
 
@@ -240,10 +252,10 @@ function App() {
     if (token && !isAdmin && page === 'shop') {
       loadShopRecommendations()
     }
-    if (token && !isAdmin && page === 'cart') {
+    if (token && !isAdmin && page === 'cart' && cart) {
       loadCartRecommendations()
     }
-  }, [page, token, role])
+  }, [page, token, role, cart])
 
   // REMOVED: The useEffect that was recalculating unreadCount from notifications
   // This was causing the count to change from 3 to 7
@@ -447,7 +459,7 @@ function App() {
                   checkout={handleCheckout}
                   fail={fail}
                   show={show}
-                  recommendations={cartRecommendations}
+                  recommendationsByProduct={cartRecommendations}
                   recommendationsLoading={cartRecommendationsLoading}
                   addToCart={addToCart}
               />
@@ -887,7 +899,7 @@ function AuthView({ onAuthenticated, fail }) {
 /* ---------------------------------------------------- */
 /* CART VIEW */
 /* ---------------------------------------------------- */
-function CartView({ cart, refresh, checkout, fail, show, recommendations, recommendationsLoading, addToCart }) {
+function CartView({ cart, refresh, checkout, fail, show, recommendationsByProduct, recommendationsLoading, addToCart }) {
   async function updateQty(itemId, quantity) {
     try {
       await cartApi.updateCartItem(itemId, quantity)
@@ -921,7 +933,8 @@ function CartView({ cart, refresh, checkout, fail, show, recommendations, recomm
             <div className="cart-layout">
               <div className="cart-items">
                 {cart.items.map((item) => (
-                    <div className="cart-item" key={item.id}>
+                    <div className="cart-item-group" key={item.id}>
+                      <div className="cart-item">
                       <div>
                         <h3>{item.productName}</h3>
                         <span style={{ color: 'var(--text-muted)' }}>
@@ -957,6 +970,14 @@ function CartView({ cart, refresh, checkout, fail, show, recommendations, recomm
                       >
                         Remove
                       </button>
+                      </div>
+
+                      <CartItemRecommendations
+                          productName={item.productName}
+                          recommendations={recommendationsByProduct[item.productId] || []}
+                          loading={recommendationsLoading}
+                          addToCart={addToCart}
+                      />
                     </div>
                 ))}
               </div>
@@ -979,13 +1000,30 @@ function CartView({ cart, refresh, checkout, fail, show, recommendations, recomm
             </div>
         )}
 
-        <RecommendationSection
-            recommendations={recommendations}
-            loading={recommendationsLoading}
-            addToCart={addToCart}
-            compact
-        />
       </section>
+  )
+}
+
+function CartItemRecommendations({ productName, recommendations, loading, addToCart }) {
+  return (
+      <div className="cart-item-recommendations">
+        <span>Suggested with {productName}</span>
+        {loading ? (
+            <small>Finding related products...</small>
+        ) : recommendations.length === 0 ? (
+            <small>No related products available yet.</small>
+        ) : (
+            <div className="cart-recommendation-list">
+              {recommendations.map((product) => (
+                  <button className="cart-recommendation" key={product.id} onClick={() => addToCart(product.id)}>
+                    <span>{product.name}</span>
+                    <strong>{currency.format(product.price)}</strong>
+                    <em>+ Add</em>
+                  </button>
+              ))}
+            </div>
+        )}
+      </div>
   )
 }
 

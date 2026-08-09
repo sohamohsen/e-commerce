@@ -6,6 +6,7 @@ import com.task.ecommerce.recommendtion.dto.ProductRecommendtion;
 import com.task.ecommerce.recommendtion.dto.RecommendationResponse;
 import com.task.ecommerce.entity.OrderItem;
 import com.task.ecommerce.entity.Product;
+import com.task.ecommerce.exception.BadRequestException;
 import com.task.ecommerce.repository.CartItemRepository;
 import com.task.ecommerce.repository.OrderItemRepository;
 import com.task.ecommerce.repository.OrderRepository;
@@ -135,14 +136,14 @@ public class RecommendationService {
                 .toList();
     }
 
-    public List<ProductRecommendtion> getProductRecommendations(Integer userId) {
+    public List<ProductRecommendtion> getProductRecommendations(Integer userId, Integer productId) {
 
-        log.info("Recommendation userId = {}", userId);
+        if (cartItemRepository.findByUserIdAndProductId(userId, productId).isEmpty()) {
+            throw new BadRequestException("Product is not in your cart.");
+        }
 
         List<Integer> productIds =
-                cartItemRepository.findCollaborativeRecommendations(userId);
-
-        log.info("Recommended product IDs = {}", productIds);
+                cartItemRepository.findCollaborativeRecommendationsForProduct(userId, productId);
 
         List<Product> products =
                 productRepository.findAllByIdIn(productIds);

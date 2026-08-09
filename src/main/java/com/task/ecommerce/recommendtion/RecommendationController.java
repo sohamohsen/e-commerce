@@ -37,9 +37,10 @@ public class RecommendationController {
 
     @GetMapping("/product-recommendations")
     public ResponseEntity<?> getRecommendationsForProduct(
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal User user,
+            @RequestParam Integer productId) {
 
-        List<ProductRecommendtion> recommendationsProducts = recommendationService.getProductRecommendations(user.getId());
+        List<ProductRecommendtion> recommendationsProducts = recommendationService.getProductRecommendations(user.getId(), productId);
 
         ReturnObject response = ReturnObject.builder()
                 .timestamp(LocalDateTime.now())

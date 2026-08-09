@@ -93,7 +93,7 @@ export const productApi = {
 // Personalized and collaborative product recommendations (require an authenticated customer)
 export const recommendationApi = {
   getRecommendations: () => api('/recommendations'),
-  getProductRecommendations: () => api('/product-recommendations'),
+  getProductRecommendations: (productId) => api('/product-recommendations', { query: { productId } }),
 }
 
 // Category API endpoints

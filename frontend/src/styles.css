@@ -625,6 +625,69 @@ button.link.danger {
   gap: 1rem;
 }
 
+.cart-item-group {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.cart-item-group .cart-item {
+  border: 0;
+  border-radius: 0;
+}
+
+.cart-item-recommendations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1.5rem 1.15rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.cart-item-recommendations > span {
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.cart-item-recommendations small {
+  color: var(--text-muted);
+}
+
+.cart-recommendation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cart-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+}
+
+.cart-recommendation:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.cart-recommendation strong {
+  font-size: 0.85rem;
+}
+
+.cart-recommendation em {
+  color: #c7d2fe;
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
 .cart-item .quantity {
   display: flex;
   align-items: center;
