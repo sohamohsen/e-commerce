@@ -41,7 +41,10 @@ function App() {
 
   const [products, setProducts] = useState([])
   const [totalProducts, setTotalProducts] = useState(0)
-  const [recommendations, setRecommendations] = useState([])
+  const [shopRecommendations, setShopRecommendations] = useState([])
+  const [shopRecommendationsLoading, setShopRecommendationsLoading] = useState(false)
+  const [cartRecommendations, setCartRecommendations] = useState([])
+  const [cartRecommendationsLoading, setCartRecommendationsLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [cart, setCart] = useState(null)
   const [orders, setOrders] = useState([])
@@ -110,24 +113,56 @@ function App() {
     }
   }
 
-  async function loadRecommendations() {
+  async function loadShopRecommendations() {
     if (!token || isAdmin) {
-      setRecommendations([])
+      setShopRecommendations([])
+      setShopRecommendationsLoading(false)
       return
     }
 
+    setShopRecommendationsLoading(true)
     try {
       const items = await recommendationApi.getRecommendations()
       const resolved = await Promise.all(
-        (Array.isArray(items) ? items : []).map(async ({ productId, reason }) => {
-          const product = await productApi.getProductById(productId)
-          return { ...product, recommendationReason: reason }
-        })
+          (Array.isArray(items) ? items : []).map(async ({ productId, reason }) => {
+            const product = await productApi.getProductById(productId)
+            return { ...product, recommendationReason: reason }
+          })
       )
-      setRecommendations(resolved)
+      setShopRecommendations(resolved)
     } catch {
       // Recommendations are optional and must not interrupt product browsing.
-      setRecommendations([])
+      setShopRecommendations([])
+    } finally {
+      setShopRecommendationsLoading(false)
+    }
+  }
+
+  async function loadCartRecommendations() {
+    if (!token || isAdmin) {
+      setCartRecommendations([])
+      setCartRecommendationsLoading(false)
+      return
+    }
+
+    setCartRecommendationsLoading(true)
+    try {
+      const items = await recommendationApi.getProductRecommendations()
+      setCartRecommendations(
+          (Array.isArray(items) ? items : []).map(
+              ({ productId, productName, productPrice, productDescription }) => ({
+                id: productId,
+                name: productName,
+                price: productPrice,
+                description: productDescription,
+                recommendationReason: 'Recommended based on similar purchases',
+              })
+          )
+      )
+    } catch {
+      setCartRecommendations([])
+    } finally {
+      setCartRecommendationsLoading(false)
     }
   }
 
@@ -193,12 +228,22 @@ function App() {
       loadCart()
       loadNotifications()
       loadUnreadCount()
-      loadRecommendations()
     } else {
       setUnreadCount(0)
-      setRecommendations([])
+      setShopRecommendations([])
+      setCartRecommendations([])
     }
   }, [token])
+
+  // Products use the AI-backed endpoint; Cart uses collaborative recommendations.
+  useEffect(() => {
+    if (token && !isAdmin && page === 'shop') {
+      loadShopRecommendations()
+    }
+    if (token && !isAdmin && page === 'cart') {
+      loadCartRecommendations()
+    }
+  }, [page, token, role])
 
   // REMOVED: The useEffect that was recalculating unreadCount from notifications
   // This was causing the count to change from 3 to 7
@@ -343,7 +388,9 @@ function App() {
               <ShopView
                   products={products}
                   totalProducts={totalProducts}
-                  recommendations={recommendations}
+                  recommendations={shopRecommendations}
+                  recommendationsLoading={shopRecommendationsLoading}
+                  showRecommendations={Boolean(token) && !isAdmin}
                   categories={categories}
                   loading={loading}
                   search={search}
@@ -394,7 +441,16 @@ function App() {
           )}
 
           {page === 'cart' && !isAdmin && (
-              <CartView cart={cart} refresh={loadCart} checkout={handleCheckout} fail={fail} show={show} />
+              <CartView
+                  cart={cart}
+                  refresh={loadCart}
+                  checkout={handleCheckout}
+                  fail={fail}
+                  show={show}
+                  recommendations={cartRecommendations}
+                  recommendationsLoading={cartRecommendationsLoading}
+                  addToCart={addToCart}
+              />
           )}
 
           {page === 'orders' && !isAdmin && (
@@ -478,6 +534,8 @@ function ShopView({
                     products,
                     totalProducts,
                     recommendations,
+                    recommendationsLoading,
+                    showRecommendations,
                     categories,
                     loading,
                     search,
@@ -519,39 +577,13 @@ function ShopView({
         </span>
         </div>
 
-        {recommendations.length > 0 && (
-          <div className="recommendations-section">
-            <div className="section-title recommendation-title">
-              <div>
-                <p className="eyebrow">PICKED FOR YOU</p>
-                <h2>Recommended for You</h2>
-              </div>
-              <span>Based on your previous purchases</span>
-            </div>
-            <div className="product-grid recommendations-grid">
-              {recommendations.map((product) => (
-                <article className="product-card" key={product.id}>
-                  <div
-                    className="product-image"
-                    onClick={() => onSelectProduct(product)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {product.imageUrl ? <img src={product.imageUrl} alt={product.name} /> : <span>◈</span>}
-                  </div>
-                  <div className="product-body">
-                    <span className="recommendation-reason">{product.recommendationReason}</span>
-                    <span className="category">{product.categoryName || 'General'}</span>
-                    <h3 onClick={() => onSelectProduct(product)} style={{ cursor: 'pointer' }}>{product.name}</h3>
-                    <p>{product.description || 'A premium-quality product with exceptional design and craftsmanship.'}</p>
-                    <div className="price-row">
-                      <strong>{currency.format(product.price)}</strong>
-                      <button className="primary" onClick={() => addToCart(product.id)}>+ Add to Cart</button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
+        {showRecommendations && (
+          <RecommendationSection
+              recommendations={recommendations}
+              loading={recommendationsLoading}
+              addToCart={addToCart}
+              onSelectProduct={onSelectProduct}
+          />
         )}
 
         <div className="catalog-tools">
@@ -855,7 +887,7 @@ function AuthView({ onAuthenticated, fail }) {
 /* ---------------------------------------------------- */
 /* CART VIEW */
 /* ---------------------------------------------------- */
-function CartView({ cart, refresh, checkout, fail, show }) {
+function CartView({ cart, refresh, checkout, fail, show, recommendations, recommendationsLoading, addToCart }) {
   async function updateQty(itemId, quantity) {
     try {
       await cartApi.updateCartItem(itemId, quantity)
@@ -946,7 +978,61 @@ function CartView({ cart, refresh, checkout, fail, show }) {
               </aside>
             </div>
         )}
+
+        <RecommendationSection
+            recommendations={recommendations}
+            loading={recommendationsLoading}
+            addToCart={addToCart}
+            compact
+        />
       </section>
+  )
+}
+
+function RecommendationSection({ recommendations, loading, addToCart, onSelectProduct, compact = false }) {
+  return (
+      <div className={`recommendations-section ${compact ? 'recommendations-compact' : ''}`}>
+        <div className="section-title recommendation-title">
+          <div>
+            <p className="eyebrow">PICKED FOR YOU</p>
+            <h2>Recommended for You</h2>
+          </div>
+          <span>Based on similar customers' purchases</span>
+        </div>
+
+        {loading ? (
+            <div className="recommendations-empty">Finding products you may like...</div>
+        ) : recommendations.length === 0 ? (
+            <div className="recommendations-empty">
+              Recommendations will appear here after you have purchase history to compare.
+            </div>
+        ) : (
+            <div className="product-grid recommendations-grid">
+              {recommendations.map((product) => (
+                  <article className="product-card" key={product.id}>
+                    <div
+                        className="product-image"
+                        onClick={() => onSelectProduct?.(product)}
+                        style={{ cursor: onSelectProduct ? 'pointer' : 'default' }}
+                    >
+                      {product.imageUrl ? <img src={product.imageUrl} alt={product.name} /> : <span>◈</span>}
+                    </div>
+                    <div className="product-body">
+                      <span className="recommendation-reason">{product.recommendationReason}</span>
+                      <h3 onClick={() => onSelectProduct?.(product)} style={{ cursor: onSelectProduct ? 'pointer' : 'default' }}>
+                        {product.name}
+                      </h3>
+                      <p>{product.description || 'A premium-quality product with exceptional design and craftsmanship.'}</p>
+                      <div className="price-row">
+                        <strong>{currency.format(product.price)}</strong>
+                        <button className="primary" onClick={() => addToCart(product.id)}>+ Add to Cart</button>
+                      </div>
+                    </div>
+                  </article>
+              ))}
+            </div>
+        )}
+      </div>
   )
 }
 

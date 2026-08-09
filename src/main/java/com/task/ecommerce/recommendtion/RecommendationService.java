@@ -1,8 +1,12 @@
-package com.task.ecommerce.ai;
+package com.task.ecommerce.recommendtion;
 
-import com.task.ecommerce.ai.dto.RecommendationResponse;
+import com.task.ecommerce.ai.AiClient;
+import com.task.ecommerce.entity.CartItem;
+import com.task.ecommerce.recommendtion.dto.ProductRecommendtion;
+import com.task.ecommerce.recommendtion.dto.RecommendationResponse;
 import com.task.ecommerce.entity.OrderItem;
 import com.task.ecommerce.entity.Product;
+import com.task.ecommerce.repository.CartItemRepository;
 import com.task.ecommerce.repository.OrderItemRepository;
 import com.task.ecommerce.repository.OrderRepository;
 import com.task.ecommerce.repository.ProductRepository;
@@ -11,8 +15,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +29,7 @@ public class RecommendationService {
     private final AiClient aiClient;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -37,7 +45,7 @@ public class RecommendationService {
                 .limit(10)
                 .toList();
 
-        List<Product> candidateProducts = productRepository.findTop30ByIsActiveTrueOrderByCreatedAtDesc()
+        List<Product> candidateProducts = productRepository.findTop30ByIsActiveTrueAndQuantityGreaterThanOrderByCreatedAtDesc(0)
                 .stream()
                 .filter(p -> !purchasedProductIds.contains(p.getId()))
                 .toList();
@@ -124,6 +132,28 @@ public class RecommendationService {
         return candidates.stream()
                 .limit(5)
                 .map(p -> new RecommendationResponse(p.getId(), "Popular product"))
+                .toList();
+    }
+
+    public List<ProductRecommendtion> getProductRecommendations(Integer userId) {
+
+        log.info("Recommendation userId = {}", userId);
+
+        List<Integer> productIds =
+                cartItemRepository.findCollaborativeRecommendations(userId);
+
+        log.info("Recommended product IDs = {}", productIds);
+
+        List<Product> products =
+                productRepository.findAllByIdIn(productIds);
+
+        return products.stream()
+                .map(product -> new ProductRecommendtion(
+                        product.getId(),
+                        product.getName(),
+                        product.getPrice(),
+                        product.getDescription()
+                ))
                 .toList();
     }
 }

@@ -1,4 +1,4 @@
-package com.task.ecommerce.ai.dto;
+package com.task.ecommerce.recommendtion.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

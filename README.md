@@ -117,7 +117,7 @@ All application endpoints are under the `/api` context path. Authenticated calls
 | Public products and categories | `/product`, `/category` |
 | Cart, orders, and payments | `/cart`, `/orders`, `/payment` |
 | Notifications and support chat | `/notifications`, `/chat` |
-| Recommendations | `/recommendations` |
+| Recommendations | `/recommendations`, `/product-recommendations` |
 | Administration | `/admin-products`, `/admin-categories`, `/admin-orders`, `/admin` |
 | Super administration | `/super-admin` |
 
@@ -125,7 +125,7 @@ Interactive API documentation is available while the backend is running at [Swag
 
 ## Recommendations
 
-`GET /api/recommendations` is available to authenticated users. The service compares a customer's purchased products against active catalog products and returns up to five product IDs with a short reason. The frontend resolves these IDs into product cards in a **Recommended for You** section. For new customers or an unavailable AI provider, it returns recently added popular products instead.
+`GET /api/product-recommendations` is available to authenticated users. It uses collaborative purchase history to return up to five recommended products with their ID, name, price, and description. The frontend renders these in a **Recommended for You** section. `GET /api/recommendations` provides the AI-backed alternative, including a short reason and a popular-products fallback.
 
 ## Notes
 

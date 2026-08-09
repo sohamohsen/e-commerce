@@ -90,9 +90,10 @@ export const productApi = {
   getProductById: (id) => api(`/product/${id}`, { auth: false }),
 }
 
-// Personalized product recommendations (requires an authenticated customer)
+// Personalized and collaborative product recommendations (require an authenticated customer)
 export const recommendationApi = {
   getRecommendations: () => api('/recommendations'),
+  getProductRecommendations: () => api('/product-recommendations'),
 }
 
 // Category API endpoints

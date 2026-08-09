@@ -49,5 +49,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             Pageable pageable
     );
 
-    List<Product> findTop30ByIsActiveTrueOrderByCreatedAtDesc();
+    List<Product> findTop30ByIsActiveTrueAndQuantityGreaterThanOrderByCreatedAtDesc(Integer quantity);
+    List<Product> findAllByIdIn(List<Integer> productIds);
 }
