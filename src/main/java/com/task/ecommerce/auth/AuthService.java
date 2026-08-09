@@ -1,10 +1,10 @@
-package com.task.ecommerce.Auth;
+package com.task.ecommerce.auth;
 
-import com.task.ecommerce.Auth.dto.AdminLoginRequest;
+import com.task.ecommerce.auth.dto.AdminLoginRequest;
 import org.springframework.security.core.AuthenticationException;
-import com.task.ecommerce.Auth.dto.LoginRequest;
-import com.task.ecommerce.Auth.dto.LoginResponse;
-import com.task.ecommerce.Auth.dto.RegistrationRequest;
+import com.task.ecommerce.auth.dto.LoginRequest;
+import com.task.ecommerce.auth.dto.LoginResponse;
+import com.task.ecommerce.auth.dto.RegistrationRequest;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.entity.enums.Role;
 import com.task.ecommerce.exception.AccountLockedException;
@@ -17,7 +17,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.*;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

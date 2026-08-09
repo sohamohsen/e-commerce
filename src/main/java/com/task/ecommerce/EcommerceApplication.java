@@ -1,6 +1,7 @@
 package com.task.ecommerce;
 
 import com.task.ecommerce.config.properties.AwsPropertiesConfig;
+import com.task.ecommerce.config.properties.HuggingFacePropertiesConfig;
 import com.task.ecommerce.config.properties.PaymobPropertiesConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableConfigurationProperties({PaymobPropertiesConfig.class, AwsPropertiesConfig.class})
+@EnableConfigurationProperties({PaymobPropertiesConfig.class, AwsPropertiesConfig.class, HuggingFacePropertiesConfig.class})
 @EnableScheduling
 @EnableAsync
 public class EcommerceApplication {

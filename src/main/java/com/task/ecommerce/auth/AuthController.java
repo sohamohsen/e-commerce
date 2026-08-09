@@ -1,9 +1,9 @@
-package com.task.ecommerce.Auth;
+package com.task.ecommerce.auth;
 
-import com.task.ecommerce.Auth.dto.AdminLoginRequest;
-import com.task.ecommerce.Auth.dto.LoginRequest;
-import com.task.ecommerce.Auth.dto.LoginResponse;
-import com.task.ecommerce.Auth.dto.RegistrationRequest;
+import com.task.ecommerce.auth.dto.AdminLoginRequest;
+import com.task.ecommerce.auth.dto.LoginRequest;
+import com.task.ecommerce.auth.dto.LoginResponse;
+import com.task.ecommerce.auth.dto.RegistrationRequest;
 import com.task.ecommerce.utils.ReturnObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

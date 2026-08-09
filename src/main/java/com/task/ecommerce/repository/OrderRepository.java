@@ -22,4 +22,5 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime createdAt);
 
-}
+    @Query("SELECT o.id FROM Order o WHERE o.userId = :userId")
+    List<Integer> findOrderIdsByUserId(@Param("userId") Integer userId);}

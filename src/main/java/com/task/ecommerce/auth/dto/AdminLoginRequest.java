@@ -1,4 +1,4 @@
-package com.task.ecommerce.Auth.dto;
+package com.task.ecommerce.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -10,10 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LoginRequest {
-    @NotBlank(message = "Identifier is required")
-    private String identifier;
-
-    @NotBlank(message = "Password is required")
+public class AdminLoginRequest {
+    @NotBlank(message = "Email is required")
+    private String email;
+    @NotBlank(message = "password is required")
     private String password;
 }
