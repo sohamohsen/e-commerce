@@ -5,6 +5,7 @@ import {
   readUsername,
   authApi,
   productApi,
+  recommendationApi,
   categoryApi,
   cartApi,
   orderApi,
@@ -40,6 +41,7 @@ function App() {
 
   const [products, setProducts] = useState([])
   const [totalProducts, setTotalProducts] = useState(0)
+  const [recommendations, setRecommendations] = useState([])
   const [categories, setCategories] = useState([])
   const [cart, setCart] = useState(null)
   const [orders, setOrders] = useState([])
@@ -108,6 +110,27 @@ function App() {
     }
   }
 
+  async function loadRecommendations() {
+    if (!token || isAdmin) {
+      setRecommendations([])
+      return
+    }
+
+    try {
+      const items = await recommendationApi.getRecommendations()
+      const resolved = await Promise.all(
+        (Array.isArray(items) ? items : []).map(async ({ productId, reason }) => {
+          const product = await productApi.getProductById(productId)
+          return { ...product, recommendationReason: reason }
+        })
+      )
+      setRecommendations(resolved)
+    } catch {
+      // Recommendations are optional and must not interrupt product browsing.
+      setRecommendations([])
+    }
+  }
+
   async function loadCart() {
     if (!token) return
     try {
@@ -170,8 +193,10 @@ function App() {
       loadCart()
       loadNotifications()
       loadUnreadCount()
+      loadRecommendations()
     } else {
       setUnreadCount(0)
+      setRecommendations([])
     }
   }, [token])
 
@@ -318,6 +343,7 @@ function App() {
               <ShopView
                   products={products}
                   totalProducts={totalProducts}
+                  recommendations={recommendations}
                   categories={categories}
                   loading={loading}
                   search={search}
@@ -451,6 +477,7 @@ function App() {
 function ShopView({
                     products,
                     totalProducts,
+                    recommendations,
                     categories,
                     loading,
                     search,
@@ -491,6 +518,41 @@ function ShopView({
           Showing {products.length} of {totalProducts} products
         </span>
         </div>
+
+        {recommendations.length > 0 && (
+          <div className="recommendations-section">
+            <div className="section-title recommendation-title">
+              <div>
+                <p className="eyebrow">PICKED FOR YOU</p>
+                <h2>Recommended for You</h2>
+              </div>
+              <span>Based on your previous purchases</span>
+            </div>
+            <div className="product-grid recommendations-grid">
+              {recommendations.map((product) => (
+                <article className="product-card" key={product.id}>
+                  <div
+                    className="product-image"
+                    onClick={() => onSelectProduct(product)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {product.imageUrl ? <img src={product.imageUrl} alt={product.name} /> : <span>◈</span>}
+                  </div>
+                  <div className="product-body">
+                    <span className="recommendation-reason">{product.recommendationReason}</span>
+                    <span className="category">{product.categoryName || 'General'}</span>
+                    <h3 onClick={() => onSelectProduct(product)} style={{ cursor: 'pointer' }}>{product.name}</h3>
+                    <p>{product.description || 'A premium-quality product with exceptional design and craftsmanship.'}</p>
+                    <div className="price-row">
+                      <strong>{currency.format(product.price)}</strong>
+                      <button className="primary" onClick={() => addToCart(product.id)}>+ Add to Cart</button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="catalog-tools">
           <label>

@@ -343,6 +343,42 @@ h1, h2, h3, h4 {
 }
 
 /* Product Grid & Cards */
+.recommendations-section {
+  margin: 2rem 0 2.5rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.45));
+}
+
+.recommendation-title {
+  margin-bottom: 1.25rem;
+}
+
+.recommendation-title .eyebrow {
+  margin-bottom: 0.2rem;
+}
+
+.recommendation-title h2 {
+  margin: 0;
+}
+
+.recommendations-grid {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.25rem;
+}
+
+.recommendation-reason {
+  align-self: flex-start;
+  margin-bottom: 0.65rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
