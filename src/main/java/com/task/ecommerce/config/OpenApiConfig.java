@@ -41,12 +41,11 @@ public class OpenApiConfig {
                 ))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
-                        .addSecuritySchemes(securitySchemeName,
+                                .addSecuritySchemes(securitySchemeName,
                                 new SecurityScheme()
-                                        .name(securitySchemeName)
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")
-                                        .description("Enter your JWT access token (without the 'Bearer ' prefix).")));
+                                        .name("Authorization")
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
+                                        .description("Enter the complete authentication value: Token <your JWT access token>.")));
     }
 }
