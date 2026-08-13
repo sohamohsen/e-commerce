@@ -1,6 +1,7 @@
 package com.task.ecommerce.user;
 
 import com.task.ecommerce.admin.dto.ProductResponse;
+import com.task.ecommerce.entity.User;
 import com.task.ecommerce.service.ProductService;
 import com.task.ecommerce.utils.PageResponse;
 import com.task.ecommerce.utils.ReturnObject;
@@ -9,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,6 +24,7 @@ import java.time.LocalDateTime;
 public class ProductController {
 
     private final ProductService productService;
+    private final CurrentUserService userService;
 
     @Operation(summary = "Get paginated products", description = "Fetch products with optional filters for category, name, price range, and sorting.")
     @GetMapping
@@ -61,5 +65,15 @@ public class ProductController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/link-keycloak")
+    public ResponseEntity<?> linkKeycloakUser(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+
+        User user = userService.linkKeycloakUser(jwt);
+
+        return ResponseEntity.ok(user);
     }
 }

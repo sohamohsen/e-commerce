@@ -41,40 +41,40 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "Admin login", description = "Authenticates an admin user and returns a JWT token.")
-    @PostMapping("/admin/login")
-    public ResponseEntity<?> adminLogin(
-            @RequestBody @Valid AdminLoginRequest login,
-            HttpServletRequest request
-    ){
-        LoginResponse loginResponse = authService.adminLogin(login, request);
+//    @Operation(summary = "Admin login", description = "Authenticates an admin user and returns a JWT token.")
+//    @PostMapping("/admin/login")
+//    public ResponseEntity<?> adminLogin(
+//            @RequestBody @Valid AdminLoginRequest login,
+//            HttpServletRequest request
+//    ){
+//        LoginResponse loginResponse = authService.adminLogin(login, request);
+//
+//        ReturnObject response = ReturnObject.builder()
+//                .timestamp(LocalDateTime.now())
+//                .status(HttpStatus.OK.value())
+//                .message("login successfully.")
+//                .data(loginResponse)
+//                .build();
+//
+//        return ResponseEntity.status(HttpStatus.OK).body(response);
+//    }
 
-        ReturnObject response = ReturnObject.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.OK.value())
-                .message("login successfully.")
-                .data(loginResponse)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
-
-    @Operation(summary = "Customer login", description = "Authenticates a customer and returns a JWT token.")
-    @PostMapping("/customer/login")
-    public ResponseEntity<?> userLogin(
-            @RequestBody @Valid LoginRequest login,
-            HttpServletRequest request
-            ){
-        LoginResponse loginResponse = authService.userLogin(login, request);
-
-        ReturnObject response = ReturnObject.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.OK.value())
-                .message("login successfully.")
-                .data(loginResponse)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
+//    @Operation(summary = "Customer login", description = "Authenticates a customer and returns a JWT token.")
+//    @PostMapping("/customer/login")
+//    public ResponseEntity<?> userLogin(
+//            @RequestBody @Valid LoginRequest login,
+//            HttpServletRequest request
+//            ){
+//        LoginResponse loginResponse = authService.userLogin(login, request);
+//
+//        ReturnObject response = ReturnObject.builder()
+//                .timestamp(LocalDateTime.now())
+//                .status(HttpStatus.OK.value())
+//                .message("login successfully.")
+//                .data(loginResponse)
+//                .build();
+//
+//        return ResponseEntity.status(HttpStatus.OK).body(response);
+//    }
 
 }

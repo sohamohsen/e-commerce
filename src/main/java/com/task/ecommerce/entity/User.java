@@ -41,6 +41,8 @@ public class User implements UserDetails {
     private boolean accountLocked;
     private boolean passwordChanged;
 
+    @Column(name = "keycloak_id", unique = true)
+    private String keycloakId;
 
     @CreationTimestamp
     @Column(updatable = false)

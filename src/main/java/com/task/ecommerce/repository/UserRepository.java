@@ -45,4 +45,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
             @Param("createdTo") LocalDateTime createdTo,
             Pageable pageable
     );
+
+    Optional<User> findByKeycloakId(String keycloakId);
 }

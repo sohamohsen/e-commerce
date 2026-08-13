@@ -2,7 +2,6 @@ package com.task.ecommerce.admin;
 
 import com.task.ecommerce.admin.dto.ActivateAccount;
 import com.task.ecommerce.entity.User;
-import com.task.ecommerce.user.UserService;
 import com.task.ecommerce.utils.ReturnObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

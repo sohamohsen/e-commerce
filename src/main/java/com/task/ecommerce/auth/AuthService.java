@@ -29,9 +29,9 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
+//    private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+//    private final JwtUtil jwtUtil;
     private final RateLimiterService rateLimiterService;
 
     private static final int TEMP_LOCK_ATTEMPTS = 5;
@@ -39,27 +39,27 @@ public class AuthService {
     private static final int PERMANENT_LOCK_ATTEMPTS = 20;
     private static final int TEMP_LOCK_MINUTES = 5;
 
-    @Transactional
-    public LoginResponse adminLogin(AdminLoginRequest login, HttpServletRequest request) {
-
-        String ip = request.getRemoteAddr();
-        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
-            throw new TooManyRequestsException("Too many attempts. Try again later.");
-        }
-
-
-        User user = getAdminUser(login.getEmail());
-
-        validateAccountStatus(user);
-
-        authenticate(user, login.getPassword());
-
-        resetFailedAttempts(user);
-
-        String token = jwtUtil.generateToken(user);
-
-        return buildLoginResponse(user, token, user.isPasswordChanged());
-    }
+//    @Transactional
+//    public LoginResponse adminLogin(AdminLoginRequest login, HttpServletRequest request) {
+//
+//        String ip = request.getRemoteAddr();
+//        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
+//            throw new TooManyRequestsException("Too many attempts. Try again later.");
+//        }
+//
+//
+//        User user = getAdminUser(login.getEmail());
+//
+//        validateAccountStatus(user);
+//
+//        authenticate(user, login.getPassword());
+//
+//        resetFailedAttempts(user);
+//
+//        String token = jwtUtil.generateToken(user);
+//
+//        return buildLoginResponse(user, token, user.isPasswordChanged());
+//    }
 
     private User getAdminUser(String email) {
 
@@ -102,43 +102,43 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private void authenticate(User user, String password) {
-
-        log.info("Authenticating userId={}, email={}", user.getId(), user.getEmail());
-
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            String.valueOf(user.getId()),
-                            password
-                    )
-            );
-
-            log.info("Authentication succeeded for userId={}", user.getId());
-
-        } catch (BadCredentialsException ex) {
-
-            log.warn("Authentication failed for userId={}", user.getId(), ex);
-
-            handleFailedLogin(user);
-
-            throw new BadRequestException("Invalid email or password");
-
-        } catch (LockedException ex) {
-
-            throw new BadRequestException("Your account is locked. Please try again later.");
-
-        } catch (DisabledException ex) {
-
-            throw new BadRequestException("Your account is disabled.");
-
-        } catch (AuthenticationException ex) {
-
-            log.error("Authentication error", ex);
-
-            throw new BadRequestException(ex.getMessage());
-        }
-    }
+//    private void authenticate(User user, String password) {
+//
+//        log.info("Authenticating userId={}, email={}", user.getId(), user.getEmail());
+//
+//        try {
+//            authenticationManager.authenticate(
+//                    new UsernamePasswordAuthenticationToken(
+//                            String.valueOf(user.getId()),
+//                            password
+//                    )
+//            );
+//
+//            log.info("Authentication succeeded for userId={}", user.getId());
+//
+//        } catch (BadCredentialsException ex) {
+//
+//            log.warn("Authentication failed for userId={}", user.getId(), ex);
+//
+//            handleFailedLogin(user);
+//
+//            throw new BadRequestException("Invalid email or password");
+//
+//        } catch (LockedException ex) {
+//
+//            throw new BadRequestException("Your account is locked. Please try again later.");
+//
+//        } catch (DisabledException ex) {
+//
+//            throw new BadRequestException("Your account is disabled.");
+//
+//        } catch (AuthenticationException ex) {
+//
+//            log.error("Authentication error", ex);
+//
+//            throw new BadRequestException(ex.getMessage());
+//        }
+//    }
 
     private void handleFailedLogin(User user) {
 
@@ -179,25 +179,25 @@ public class AuthService {
                 .build();
     }
 
-    public LoginResponse userLogin(LoginRequest login, HttpServletRequest request) {
-
-        String ip = request.getRemoteAddr();
-        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
-            throw new TooManyRequestsException("Too many attempts. Try again later.");
-        }
-
-        User user = getCustomerUser(login.getIdentifier());
-
-        validateAccountStatus(user);
-
-        authenticate(user, login.getPassword());
-
-        resetFailedAttempts(user);
-
-        String token = jwtUtil.generateToken(user);
-
-        return buildLoginResponse(user, token, true);
-    }
+//    public LoginResponse userLogin(LoginRequest login, HttpServletRequest request) {
+//
+//        String ip = request.getRemoteAddr();
+//        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
+//            throw new TooManyRequestsException("Too many attempts. Try again later.");
+//        }
+//
+//        User user = getCustomerUser(login.getIdentifier());
+//
+//        validateAccountStatus(user);
+//
+//        authenticate(user, login.getPassword());
+//
+//        resetFailedAttempts(user);
+//
+//        String token = jwtUtil.generateToken(user);
+//
+//        return buildLoginResponse(user, token, true);
+//    }
 
     private User getCustomerUser(String identifier) {
 

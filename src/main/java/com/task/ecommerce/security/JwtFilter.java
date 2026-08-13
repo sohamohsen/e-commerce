@@ -1,8 +1,6 @@
 package com.task.ecommerce.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.task.ecommerce.service.TokenBlacklistService;
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
