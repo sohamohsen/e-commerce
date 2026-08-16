@@ -1,15 +1,16 @@
 package com.task.ecommerce.auth;
 
+import com.task.ecommerce.Keycloak.KeycloakLoginService;
+import com.task.ecommerce.Keycloak.KeycloakTokenResponse;
 import com.task.ecommerce.auth.dto.AdminLoginRequest;
+import com.task.ecommerce.exception.*;
+import com.task.ecommerce.service.KeycloakAdminService;
 import org.springframework.security.core.AuthenticationException;
 import com.task.ecommerce.auth.dto.LoginRequest;
 import com.task.ecommerce.auth.dto.LoginResponse;
 import com.task.ecommerce.auth.dto.RegistrationRequest;
 import com.task.ecommerce.entity.User;
 import com.task.ecommerce.entity.enums.Role;
-import com.task.ecommerce.exception.AccountLockedException;
-import com.task.ecommerce.exception.BadRequestException;
-import com.task.ecommerce.exception.TooManyRequestsException;
 import com.task.ecommerce.repository.UserRepository;
 import com.task.ecommerce.security.JwtUtil;
 import com.task.ecommerce.service.RateLimiterService;
@@ -33,6 +34,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 //    private final JwtUtil jwtUtil;
     private final RateLimiterService rateLimiterService;
+    private final KeycloakAdminService keycloakAdminService;
+    private final KeycloakLoginService keycloakLoginService;
 
     private static final int TEMP_LOCK_ATTEMPTS = 5;
     private static final int WINDOW_MIN = 1;
@@ -170,34 +173,100 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private LoginResponse buildLoginResponse(User user, String token, boolean changePassword) {
 
-        return LoginResponse.builder()
-                .token(token)
-                .enable(user.isEnabled())
-                .changePassword(changePassword)
-                .build();
+    public LoginResponse userLogin(LoginRequest login) {
+
+        log.info("=== CUSTOMER LOGIN START ===");
+        log.info("Login identifier: {}", login.getIdentifier());
+
+        User user = getCustomerUser(login.getIdentifier());
+
+        log.info(
+                "Local user found. id={}, email={}, keycloakId={}, enabled={}, role={}",
+                user.getId(),
+                user.getEmail(),
+                user.getKeycloakId(),
+                user.isEnabled(),
+                user.getRole()
+        );
+
+        validateAccountStatus(user);
+
+        log.info("Local account status validation passed");
+
+        try {
+
+            log.info("Calling Keycloak login for user: {}", login.getIdentifier());
+
+            KeycloakTokenResponse token =
+                    keycloakLoginService.login(
+                            login.getIdentifier(),
+                            login.getPassword()
+                    );
+
+            log.info("Keycloak authentication SUCCESS for user: {}",
+                    login.getIdentifier());
+
+            log.info(
+                    "Keycloak token response received. tokenType={}, expiresIn={}, refreshExpiresIn={}, hasAccessToken={}, hasRefreshToken={}",
+                    token.getTokenType(),
+                    token.getExpiresIn(),
+                    token.getRefreshExpiresIn(),
+                    token.getAccessToken() != null,
+                    token.getRefreshToken() != null
+            );
+
+            resetFailedAttempts(user);
+
+            log.info(
+                    "Failed login attempts reset for user id={}",
+                    user.getId()
+            );
+
+            LoginResponse response = LoginResponse.builder()
+                    .accessToken(token.getAccessToken())
+                    .refreshToken(token.getRefreshToken())
+                    .expiresIn(token.getExpiresIn())
+                    .refreshExpiresIn(token.getRefreshExpiresIn())
+                    .tokenType(token.getTokenType())
+                    .enable(user.isEnabled())
+                    .changePassword(user.isPasswordChanged())
+                    .build();
+
+            log.info(
+                    "Customer login completed successfully. userId={}",
+                    user.getId()
+            );
+
+            log.info("=== CUSTOMER LOGIN END ===");
+
+            return response;
+
+        } catch (KeycloakAuthenticationException ex) {
+
+            log.warn(
+                    "Keycloak authentication FAILED for user: {}. reason={}",
+                    login.getIdentifier(),
+                    ex.getMessage()
+            );
+
+            log.info(
+                    "Handling failed login for local user id={}",
+                    user.getId()
+            );
+
+            handleFailedLogin(user);
+
+            log.info(
+                    "Failed login handling completed for user id={}",
+                    user.getId()
+            );
+
+            throw new BadRequestException(
+                    "Invalid email or password"
+            );
+        }
     }
-
-//    public LoginResponse userLogin(LoginRequest login, HttpServletRequest request) {
-//
-//        String ip = request.getRemoteAddr();
-//        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
-//            throw new TooManyRequestsException("Too many attempts. Try again later.");
-//        }
-//
-//        User user = getCustomerUser(login.getIdentifier());
-//
-//        validateAccountStatus(user);
-//
-//        authenticate(user, login.getPassword());
-//
-//        resetFailedAttempts(user);
-//
-//        String token = jwtUtil.generateToken(user);
-//
-//        return buildLoginResponse(user, token, true);
-//    }
 
     private User getCustomerUser(String identifier) {
 
@@ -207,25 +276,54 @@ public class AuthService {
     }
 
     @Transactional
-    public void register(RegistrationRequest registration, HttpServletRequest request) {
+    public void register(
+            RegistrationRequest registration,
+            HttpServletRequest request
+    ) {
 
-        String ip = request.getRemoteAddr();
-        if (!rateLimiterService.isAllowed(ip, TEMP_LOCK_ATTEMPTS, WINDOW_MIN)) {
-            throw new TooManyRequestsException("Too many attempts. Try again later.");
+        checkCustomerExist(
+                registration.getEmail(),
+                registration.getPhone()
+        );
+
+        String keycloakId = null;
+
+        try {
+
+            keycloakId =
+                    keycloakAdminService.createCustomer(registration);
+
+            User user = User.builder()
+                    .name(registration.getName())
+                    .email(registration.getEmail())
+                    .phone(registration.getPhone())
+                    .keycloakId(keycloakId)
+                    .role(Role.CUSTOMER)
+                    .enabled(true)
+                    .build();
+
+            userRepository.save(user);
+
+        } catch (UserAlreadyExistsException ex) {
+
+            throw ex;
+
+        } catch (Exception ex) {
+
+            if (keycloakId != null) {
+                try {
+                    keycloakAdminService.deleteUser(keycloakId);
+                } catch (Exception deleteException) {
+                    log.error(
+                            "Failed to rollback Keycloak user {}",
+                            keycloakId,
+                            deleteException
+                    );
+                }
+            }
+
+            throw ex;
         }
-
-        checkCustomerExist(registration.getEmail(), registration.getPhone());
-
-        User user = User.builder()
-                .name(registration.getName())
-                .email(registration.getEmail())
-                .phone(registration.getPhone())
-                .password(passwordEncoder.encode(registration.getPassword()))
-                .role(Role.CUSTOMER)
-                .enabled(true)
-                .build();
-
-        userRepository.save(user);
     }
 
     private void checkCustomerExist(String email, String phone) {
@@ -241,5 +339,28 @@ public class AuthService {
 
             throw new BadRequestException("Phone already exists.");
         }
+    }
+
+    public LoginResponse refreshToken(String refreshToken) {
+
+        KeycloakTokenResponse token =
+                keycloakLoginService.refresh(refreshToken);
+
+        return LoginResponse.builder()
+                .accessToken(token.getAccessToken())
+                .refreshToken(token.getRefreshToken())
+                .expiresIn(token.getExpiresIn())
+                .refreshExpiresIn(token.getRefreshExpiresIn())
+                .tokenType(token.getTokenType())
+                .build();
+    }
+
+    public void logout(String refreshToken) {
+
+        log.info("Logging out from Keycloak");
+
+        keycloakLoginService.logout(refreshToken);
+
+        log.info("Logout completed successfully");
     }
 }

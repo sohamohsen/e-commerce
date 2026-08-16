@@ -6,7 +6,18 @@ import lombok.Data;
 @Data
 @Builder
 public class LoginResponse {
-    private String token;
+
+    private String accessToken;
+
+    private String refreshToken;
+
+    private Long expiresIn;
+
+    private Long refreshExpiresIn;
+
+    private String tokenType;
+
     private boolean enable;
+
     private boolean changePassword;
 }
